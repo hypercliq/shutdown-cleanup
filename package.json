@@ -1,5 +1,5 @@
 {
-  "name": "node-shut-down",
+  "name": "shutdown-cleanup",
   "version": "0.1.0",
   "description": "Module to handle graceful shutdowns",
   "main": "lib/index.js",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hypercliq/node-shut-down.git"
+    "url": "git+https://github.com/hypercliq/shutdown-cleanup.git"
   },
   "keywords": [
     "node",
@@ -24,9 +24,9 @@
   "author": "Hypercliq",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/hypercliq/node-shut-down/issues"
+    "url": "https://github.com/hypercliq/shutdown-cleanup/issues"
   },
-  "homepage": "https://github.com/hypercliq/node-shut-down#readme",
+  "homepage": "https://github.com/hypercliq/shutdown-cleanup#readme",
   "devDependencies": {
     "@commitlint/cli": "^8.2.0",
     "@commitlint/config-conventional": "^8.2.0",
@@ -38,5 +38,8 @@
   },
   "dependencies": {
     "debug": "^4.1.1"
+  },
+  "directories": {
+    "lib": "lib"
   }
 }
