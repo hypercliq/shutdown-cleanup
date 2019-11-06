@@ -1,4 +1,4 @@
-# shutdown-cleanup <!-- omit in toc -->
+# Shutdown Cleanup <!-- omit in toc -->
 
 Module to handle applications' graceful shutdowns.
 
@@ -32,7 +32,7 @@ It is also possible to add (or remove) other shutdown signals/events.
 ## Installation
 
 ```sh
-npm i -S shutdown-cleanup
+npm i -S @hypercliq/shutdown-cleanup
 ```
 
 ## Usage
