@@ -19,6 +19,8 @@ const shutdown = async (signal: string) => {
   await Promise.all(handlers.map(h => h()))
 
   logger('Shutdown completed')
+
+  process.exit(0)
 }
 
 const resetSignals = () => {
