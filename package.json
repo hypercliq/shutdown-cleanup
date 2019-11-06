@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Module to handle graceful shutdowns",
   "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
