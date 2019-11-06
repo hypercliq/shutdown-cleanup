@@ -47,15 +47,15 @@ resetSignals()
  * It is also possible to add (or remove) other shutdown signals.
  *
  * @export
- * @class NodeShutdown
+ * @class ShutdownCleanup
  */
-export default class NodeShutdown {
+export class ShutdownCleanup {
   /**
    * Register a handler function to run at shutdown.
    *
    * @static
    * @param {Function} handler
-   * @memberof NodeShutdown
+   * @memberof ShutdownCleanup
    */
   static registerHandler (handler: Function) {
     handlers.push(handler)
@@ -67,7 +67,7 @@ export default class NodeShutdown {
    *
    * @static
    * @param {string} signal
-   * @memberof NodeShutdown
+   * @memberof ShutdownCleanup
    */
   static addSignal (signal: string) {
     signals.add(signal)
@@ -80,7 +80,7 @@ export default class NodeShutdown {
    *
    * @static
    * @param {string} signal
-   * @memberof NodeShutdown
+   * @memberof ShutdownCleanup
    */
   static removeSignal (signal: string) {
     signals.delete(signal)
