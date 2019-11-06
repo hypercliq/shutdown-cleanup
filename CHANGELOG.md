@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0](https://github.com/hypercliq/shutdown-cleanup/compare/v0.1.0...v1.0.0) (2019-11-06)
+
+### Bug Fixes
+
+- package name change ([4189794](https://github.com/hypercliq/shutdown-cleanup/commit/41897945ffddab142ece391b3153f2c03d928a41))
+
 ## 0.1.0 (2019-11-06)
 
 ### Features
