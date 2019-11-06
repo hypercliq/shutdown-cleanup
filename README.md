@@ -40,7 +40,8 @@ npm i -S shutdown-cleanup
 ### Register a handler
 
 ```js
-import ShutdownCleanup from 'shutdown-cleanup'
+import { ShutdownCleanup } from 'shutdown-cleanup'
+// const ShutdownCleanup = require('shutdown-cleanup').ShutdownCleanup
 
 ShutdownCleanup.registerHandler(() => console.log('This is printed on exit :)'))
 ```
