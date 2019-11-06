@@ -57,7 +57,7 @@ export default class NodeShutdown {
    * @param {Function} handler
    * @memberof NodeShutdown
    */
-  static registerHandler (handler: string) {
+  static registerHandler (handler: Function) {
     handlers.push(handler)
     logger('Handler:', handler.toString())
   }
