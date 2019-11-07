@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## 2.0.0 (2019-11-07)
+
+### ⚠ BREAKING CHANGES
+
+- TS builds will fail
+
+### Features
+
+- add proper TS types ([8a66466](https://github.com/hypercliq/shutdown-cleanup/commit/8a6646616c5c97e0004a5f842de11d2a57f30dbe))
+
 ### [1.0.1](https://github.com/hypercliq/shutdown-cleanup/compare/v1.0.0...v1.0.1) (2019-11-06)
 
 ### Bug Fixes
