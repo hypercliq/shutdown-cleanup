@@ -1,6 +1,26 @@
 import debug from 'debug'
 
-const logger = debug('node-shut-down')
+/**
+ * API type
+ *
+ * These are the types accepted by `process.addListener()` and should be the types
+ * accepted by `addSignal()` and `removeSignal()`
+ */
+type SignalsEvents =
+  | 'beforeExit'
+  | 'disconnect'
+  | 'exit'
+  | 'rejectionHandled'
+  | 'uncaughtException'
+  | 'unhandledRejection'
+  | 'warning'
+  | 'message'
+  | 'newListener'
+  | 'removeListener'
+  | 'multipleResolves'
+  | NodeJS.Signals
+
+const logger = debug('shutdown-cleanup')
 
 const signals: Set<any> = new Set(['SIGTERM', 'SIGHUP', 'SIGINT', 'exit'])
 
@@ -8,7 +28,7 @@ const handlers: Function[] = []
 
 let shuttingDown = false
 
-const shutdown = async (signal: string) => {
+const shutdown = async (signal: any) => {
   if (shuttingDown) {
     return
   }
@@ -23,16 +43,13 @@ const shutdown = async (signal: string) => {
   process.exit(0)
 }
 
-const resetSignals = () => {
-  signals.forEach(event => {
-    process.removeAllListeners(event).addListener(event, shutdown)
-  })
-}
+const attachListenerForEvent = (event: any) =>
+  process.removeAllListeners(event).addListener(event, shutdown)
 
-resetSignals()
+signals.forEach(attachListenerForEvent)
 
 /**
- * Allows to register handlers for certain shutdown signals
+ * Allows to register handlers for certain shutdown signals/events
  * in order to attempt a graceful shutdown.
  *
  * NOTE: it removes any previous registered listeners for the given signals!
@@ -42,11 +59,11 @@ resetSignals()
  * `SIGHUP`
  * `SIGINT`
  *
- * It also listens to `process.exit` but keep in mind that `exit` does
+ * It also listens to the `exit` event, but keep in mind that `exit` does
  * not allow asynchrounous listeners' operations to complete.
  * https://nodejs.org/dist/latest/docs/api/process.html#process_event_exit
  *
- * It is also possible to add (or remove) other shutdown signals.
+ * It is also possible to add (or remove) other shutdown signals and events.
  *
  * @export
  * @class ShutdownCleanup
@@ -65,28 +82,29 @@ export class ShutdownCleanup {
   }
 
   /**
-   * Add a shutdown signal to listen to.
+   * Add a shutdown signal/event to listen to.
    *
    * @static
-   * @param {string} signal
+   * @param {SignalsEvents} signal
    * @memberof ShutdownCleanup
    */
-  static addSignal (signal: string) {
+  static addSignal (signal: SignalsEvents) {
     signals.add(signal)
-    resetSignals()
+    attachListenerForEvent(signal)
     logger('Added signal:', signal)
   }
 
   /**
-   * Remove a shutdown signal to listen to.
+   * Remove a shutdown signal/event to listen to.
    *
    * @static
-   * @param {string} signal
+   * @param {SignalsEvents} signal
    * @memberof ShutdownCleanup
    */
-  static removeSignal (signal: string) {
-    signals.delete(signal)
-    resetSignals()
-    logger('Removed signal:', signal)
+  static removeSignal (signal: SignalsEvents) {
+    if (signals.delete(signal)) {
+      process.removeListener(signal, shutdown)
+      logger('Removed signal:', signal)
+    }
   }
 }
