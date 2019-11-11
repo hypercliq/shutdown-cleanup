@@ -1,5 +1,7 @@
 # Shutdown Cleanup <!-- omit in toc -->
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/hypercliq/shutdown-cleanup.svg)](https://greenkeeper.io/)
+
 Module to handle applications' graceful shutdowns.
 
 - [Description](#description)
