@@ -71,7 +71,7 @@ TypeScript types are included.
 
 ### Uncaught Exceptions & other similar events
 
-It is possible to listen to the `uncaughtException` event, but **_no_** error message will be displayed if the handle function does not explicitely ask for it or we don't enable `debug` (this is also true for other events such as `unhandledRejection`.)
+It is possible to listen to the `uncaughtException` event, but **_no_** error message will be displayed if the handle function does not explicitly ask for it or we don't enable `debug` (this is also true for other events such as `unhandledRejection`.)
 
 #### Handle parameter
 
