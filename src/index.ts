@@ -7,7 +7,7 @@ import os from 'os'
  * These are the types accepted by `process.addListener()` and should be the types
  * accepted by `addSignal()` and `removeSignal()`
  */
-type SignalsEvents =
+export type SignalsEvents =
   | 'beforeExit'
   | 'disconnect'
   | 'exit'
