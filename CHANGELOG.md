@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.0.1](https://github.com/hypercliq/shutdown-cleanup/compare/v3.0.0...v3.0.1) (2019-11-11)
+
+### Bug Fixes
+
+- **npm:** ignore travis file ([665a49c](https://github.com/hypercliq/shutdown-cleanup/commit/665a49c6cedc977959bf8f4936bc66fddb0e70a1))
+
 ## 3.0.0 (2019-11-11)
 
 ### ⚠ BREAKING CHANGES
