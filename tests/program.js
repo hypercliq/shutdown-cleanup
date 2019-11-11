@@ -1,0 +1,47 @@
+const program = require('commander')
+const { ShutdownCleanup } = require('../lib/index')
+
+program
+  .option('-k, --kill-signal <signal>')
+  .option('-a, --add-signal <signal>')
+  .option('-r, --remove-signal <signal>')
+  .option('-e, --exit <code>')
+  .option('-x, --uncaught-exception')
+  .option('-y, --unhandled-rejection')
+
+program.parse(process.argv)
+
+function lookBusy () {
+  let current = 0
+  const timerId = setInterval(() => {
+    if (current === 3) {
+      clearInterval(timerId)
+    }
+    current++
+  }, 100)
+}
+
+if (program.addSignal) ShutdownCleanup.addSignal(program.addSignal)
+
+if (program.removeSignal) ShutdownCleanup.removeSignal(program.removeSignal)
+
+ShutdownCleanup.registerHandler(console.log)
+
+lookBusy()
+
+if (program.uncaughtException) {
+  // eslint-disable-next-line
+  foo()
+}
+
+if (program.unhandledRejection) {
+  const p = new Promise(resolve => {
+    // eslint-disable-next-line
+    resolve(foo())
+  })
+  return p
+}
+
+if (program.killSignal) process.kill(process.pid, program.killSignal)
+
+if (program.exit) process.exitCode = program.exit

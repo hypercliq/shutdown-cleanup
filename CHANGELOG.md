@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.2](https://github.com/hypercliq/shutdown-cleanup/compare/v2.0.1...v2.0.2) (2019-11-11)
+
+### [2.0.1](https://github.com/hypercliq/shutdown-cleanup/compare/v2.0.0...v2.0.1) (2019-11-11)
+
+### Bug Fixes
+
+- better exit code ([34569e8](https://github.com/hypercliq/shutdown-cleanup/commit/34569e84c39166e3b63cd8532fac1af0d83d7297))
+- export API types ([f462963](https://github.com/hypercliq/shutdown-cleanup/commit/f4629638fc8fff61fa886d8995399c66ac8a5b1a))
+
 ## 2.0.0 (2019-11-07)
 
 ### ⚠ BREAKING CHANGES
