@@ -1,21 +1,10 @@
-# Shutdown Cleanup <!-- omit in toc -->
+# Shutdown Cleanup _(shutdown-cleanup)_ <!-- omit in toc -->
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/hypercliq/shutdown-cleanup.svg)](https://greenkeeper.io/)
+[![Build Status](https://travis-ci.org/hypercliq/shutdown-cleanup.svg?branch=master)](https://travis-ci.org/hypercliq/shutdown-cleanup)
+![npm (scoped)](https://img.shields.io/npm/v/@hypercliq/shutdown-cleanup)
 
-Module to handle applications' graceful shutdowns.
-
-- [Description](#description)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Register a handler](#register-a-handler)
-  - [Add a signal or event to listen to](#add-a-signal-or-event-to-listen-to)
-  - [Remove a signal or an event](#remove-a-signal-or-an-event)
-  - [TypeScript](#typescript)
-- [Uncaught Exceptions & other similar events](#uncaught-exceptions--other-similar-events)
-- [Changelog](#changelog)
-- [License](#license)
-
-## Description
+> Module to handle applications' graceful shutdowns.
 
 This super simple module helps shutting down servers, database handles, etc. in NodeJS applications.
 It allows to register handlers for certain shutdown signals/events in order to attempt a graceful shutdown (clean-ups etc.)
@@ -32,7 +21,22 @@ not allow asynchrounous listeners' operations to complete (see [process.exit on 
 
 It is also possible to add (or remove) other shutdown signals/events.
 
-## Installation
+## Table of Contents <!-- omit in toc -->
+
+- [Install](#install)
+- [Usage](#usage)
+  - [Register a handler](#register-a-handler)
+  - [Add a signal or event to listen to](#add-a-signal-or-event-to-listen-to)
+  - [Remove a signal or an event](#remove-a-signal-or-an-event)
+  - [TypeScript](#typescript)
+  - [Uncaught Exceptions & other similar events](#uncaught-exceptions--other-similar-events)
+    - [Handle parameter](#handle-parameter)
+    - [Debug](#debug)
+- [Changelog](#changelog)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Install
 
 ```sh
 npm i -S @hypercliq/shutdown-cleanup
@@ -65,11 +69,23 @@ ShutdownCleanup.removeSignal('SIGHUP')
 
 TypeScript types are included.
 
-## Uncaught Exceptions & other similar events
+### Uncaught Exceptions & other similar events
 
-It is possible to listen to the `uncaughtException` event, but **_no_** error message will be displayed.
+It is possible to listen to the `uncaughtException` event, but **_no_** error message will be displayed if the handle function does not explicitly ask for it or we don't enable `debug` (this is also true for other events such as `unhandledRejection`.)
 
-In order to see what's going on, it is necessary to turn `debug` on:
+#### Handle parameter
+
+```js
+ShutdownCleanup.registerHandler(codeOrError =>
+  console.log('This what we got back:', codeOrError)
+)
+```
+
+By accepting a parameter (in this case `codeOrError`) we can get back from the module either a code/signal or an error.
+
+#### Debug
+
+Another way to see what's going on is to turn `debug` on:
 
 ```sh
 DEBUG=shutdown-cleanup npm start
@@ -81,11 +97,13 @@ or Windows
 set DEBUG=shutdown-cleanup & npm start
 ```
 
-This is also true for other events such as `unhandledRejection`.
-
 ## Changelog
 
 see [CHANGELOG](CHANGELOG.md)
+
+## Contributing
+
+PRs welcome!
 
 ## License
 
