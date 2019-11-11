@@ -1,3 +1,4 @@
 src/
 *.js
 tsconfig.json
+.travis.yml
