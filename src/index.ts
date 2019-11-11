@@ -1,4 +1,5 @@
 import debug from 'debug'
+import os from 'os'
 
 /**
  * API type
@@ -36,11 +37,19 @@ const shutdown = async (signal: any) => {
 
   logger('Shutting down on', signal)
 
-  await Promise.all(handlers.map(h => h()))
+  await Promise.all(handlers.map(h => h(signal)))
 
   logger('Shutdown completed')
 
-  process.exit(0)
+  const exitCode =
+    typeof signal === 'number'
+      ? signal
+      : signal instanceof Error
+      ? (signal as NodeJS.ErrnoException).errno
+      : os.constants.signals[signal as NodeJS.Signals]
+
+  // should not exit with 0
+  process.exit(!exitCode || exitCode === 0 ? 1 : exitCode)
 }
 
 const attachListenerForEvent = (event: any) =>
