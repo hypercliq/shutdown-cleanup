@@ -1,6 +1,6 @@
 const { fork } = require('child_process')
 const path = require('path')
-const signals = require('os').constants.signals
+const os = require('os')
 
 const programFile = path.resolve(__dirname, './program.js')
 
@@ -24,40 +24,46 @@ const forkProcess = args => {
   })
 }
 
-test('SIGINT', async () => {
-  const args = ['-k', 'SIGINT']
+/**
+ * process.kill on win32 is dodgy at best.
+ */
+describe('not windows machines', () => {
+  if (os.platform() === 'win32') return
+  test('SIGINT', async () => {
+    const args = ['-k', 'SIGINT']
 
-  const [code, output] = await forkProcess(args)
+    const [code, output] = await forkProcess(args)
 
-  expect(code).toBe(signals.SIGINT)
-  expect(output).toMatch(/^SIGINT/)
-})
+    expect(code).toBe(os.constants.signals.SIGINT)
+    expect(output).toMatch(/^SIGINT/)
+  })
 
-test('SIGTERM', async () => {
-  const args = ['-k', 'SIGTERM']
+  test('SIGTERM', async () => {
+    const args = ['-k', 'SIGTERM']
 
-  const [code, output] = await forkProcess(args)
+    const [code, output] = await forkProcess(args)
 
-  expect(code).toBe(signals.SIGTERM)
-  expect(output).toMatch(/^SIGTERM/)
-})
+    expect(code).toBe(os.constants.signals.SIGTERM)
+    expect(output).toMatch(/^SIGTERM/)
+  })
 
-test('SIGHUP', async () => {
-  const args = ['-k', 'SIGHUP']
+  test('SIGHUP', async () => {
+    const args = ['-k', 'SIGHUP']
 
-  const [code, output] = await forkProcess(args)
+    const [code, output] = await forkProcess(args)
 
-  expect(code).toBe(signals.SIGHUP)
-  expect(output).toMatch(/^SIGHUP/)
-})
+    expect(code).toBe(os.constants.signals.SIGHUP)
+    expect(output).toMatch(/^SIGHUP/)
+  })
 
-test('SIGABRT', async () => {
-  const args = ['-a', 'SIGABRT', '-k', 'SIGABRT']
+  test('SIGABRT', async () => {
+    const args = ['-a', 'SIGABRT', '-k', 'SIGABRT']
 
-  const [code, output] = await forkProcess(args)
+    const [code, output] = await forkProcess(args)
 
-  expect(code).toBe(signals.SIGABRT)
-  expect(output).toMatch(/^SIGABRT/)
+    expect(code).toBe(os.constants.signals.SIGABRT)
+    expect(output).toMatch(/^SIGABRT/)
+  })
 })
 
 test('exit', async () => {
@@ -111,5 +117,5 @@ test('unhandledRejection added', async () => {
   const [code, output] = await forkProcess(args)
 
   expect(code).toBe(1)
-  expect(output).toMatch(/^ReferenceError: foo is not defined/)
+  expect(output).toMatch(/^Error: boom/)
 })

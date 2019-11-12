@@ -35,11 +35,17 @@ if (program.uncaughtException) {
 }
 
 if (program.unhandledRejection) {
-  const p = new Promise(resolve => {
+  const p = new Promise((resolve, reject) => {
     // eslint-disable-next-line
-    resolve(foo())
+    if (false) resolve('never called :(')
+    else reject(new Error('boom'))
   })
-  return p
+
+  const badCall = async () => {
+    await p
+  }
+
+  badCall()
 }
 
 if (program.killSignal) process.kill(process.pid, program.killSignal)
