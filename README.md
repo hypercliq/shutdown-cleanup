@@ -2,7 +2,7 @@
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/hypercliq/shutdown-cleanup.svg)](https://greenkeeper.io/)
 [![Build Status](https://travis-ci.org/hypercliq/shutdown-cleanup.svg?branch=master)](https://travis-ci.org/hypercliq/shutdown-cleanup)
-![npm (scoped)](https://img.shields.io/npm/v/@hypercliq/shutdown-cleanup)
+[![npm](https://img.shields.io/npm/v/@hypercliq/shutdown-cleanup)](https://www.npmjs.com/package/@hypercliq/shutdown-cleanup)
 
 > Module to handle applications' graceful shutdowns.
 
