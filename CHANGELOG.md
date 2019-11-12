@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.0.1](https://github.com/hypercliq/shutdown-cleanup/compare/v3.0.0...v3.0.1) (2019-11-12)
+
+### Bug Fixes
+
+- latest changes from upstream ([adbd248](https://github.com/hypercliq/shutdown-cleanup/commit/adbd2483a1405b469074fd5300ca400d005c7b42))
+
 ## 3.0.0 (2019-11-11)
 
 ### ⚠ BREAKING CHANGES
