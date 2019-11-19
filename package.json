@@ -8,8 +8,8 @@
     "clean": "rimraf lib",
     "build": "tsc",
     "test": "jest",
-    "prerelease": "npm run clean && npm run build",
-    "release": "npm test && standard-version"
+    "prerelease": "npm run clean && npm run build && npm test",
+    "release": "standard-version"
   },
   "repository": {
     "type": "git",
