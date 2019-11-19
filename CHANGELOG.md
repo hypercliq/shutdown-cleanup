@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.0.2](https://github.com/hypercliq/shutdown-cleanup/compare/v3.0.1...v3.0.2) (2019-11-19)
+
+### Bug Fixes
+
+- remove npmignore ([d09194e](https://github.com/hypercliq/shutdown-cleanup/commit/d09194efaffb26bd92069afd0f15134c333c6479))
+- update packages ([da42dc8](https://github.com/hypercliq/shutdown-cleanup/commit/da42dc8e835536e74ddaaf496464a4bc688b7646))
+
 ### [3.0.1](https://github.com/hypercliq/shutdown-cleanup/compare/v3.0.0...v3.0.1) (2019-11-12)
 
 ### Bug Fixes
