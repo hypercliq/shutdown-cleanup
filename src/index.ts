@@ -139,10 +139,10 @@ export class ShutdownCleanup {
   }
 
   /**
-   * Returns an array of SignalEvents currently listened to.
+   * Returns an array of SignalsEvents currently listened to.
    *
    * @static
-   * @returns {SignalsEvents[]} an array of `SignalEvents`
+   * @returns {SignalsEvents[]} an array of `SignalsEvents`
    * @memberof ShutdownCleanup
    */
   static listSignals (): SignalsEvents[] {
