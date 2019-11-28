@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0](https://github.com/hypercliq/shutdown-cleanup/compare/v3.0.1...v3.1.0) (2019-11-28)
+
+### Features
+
+- list signals currenlty listened to ([3161d60](https://github.com/hypercliq/shutdown-cleanup/commit/3161d60f45ae5de0dbc2e20740c9d9e8805b9e2b))
+
+### Bug Fixes
+
+- use types, add tests ([be81f30](https://github.com/hypercliq/shutdown-cleanup/commit/be81f30ed93016a67ca09a853f4817c6e4b4aae5))
+- **package:** update lock and fix packages ([591e7a8](https://github.com/hypercliq/shutdown-cleanup/commit/591e7a8ecfc3219c6ee4f97656c06e182ab6c611))
+- **package:** update packages ([c87777c](https://github.com/hypercliq/shutdown-cleanup/commit/c87777c95aca979759afa25bc18bb5a97bf316bd))
+
 ### [3.0.2](https://github.com/hypercliq/shutdown-cleanup/compare/v3.0.1...v3.0.2) (2019-11-19)
 
 ### Bug Fixes
