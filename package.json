@@ -1,6 +1,6 @@
 {
   "name": "@hypercliq/shutdown-cleanup",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Module to handle graceful shutdowns",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -8,8 +8,8 @@
     "clean": "rimraf lib",
     "build": "tsc",
     "test": "jest",
-    "prerelease": "npm run clean && npm run build",
-    "release": "npm test && standard-version"
+    "prerelease": "npm run clean && npm run build && npm test",
+    "release": "standard-version"
   },
   "repository": {
     "type": "git",
@@ -36,18 +36,18 @@
     "@commitlint/config-conventional": "^8.2.0",
     "@types/debug": "^4.1.5",
     "commander": "^4.0.1",
-    "husky": "^3.0.9",
+    "husky": "^3.1.0",
     "jest": "^24.9.0",
-    "lint-staged": "^9.4.2",
+    "lint-staged": "^9.4.3",
     "prettier-standard": "^15.0.1",
     "rimraf": "^3.0.0",
-    "standard-version": "^7.0.0",
+    "standard-version": "^7.0.1",
     "typescript": "^3.7.2"
   },
   "dependencies": {
     "debug": "^4.1.1"
   },
-  "directories": {
-    "lib": "lib"
-  }
+  "files": [
+    "lib"
+  ]
 }
