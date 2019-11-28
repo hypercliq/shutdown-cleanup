@@ -21,15 +21,30 @@ export type SignalsEvents =
   | 'multipleResolves'
   | NodeJS.Signals
 
+/**
+ * The handler function
+ *
+ * @export
+ * @interface HandlerFunction
+ */
+export interface HandlerFunction {
+  (signal?: SignalsEvents | Error): any
+}
+
 const logger = debug('shutdown-cleanup')
 
-const signals: Set<any> = new Set(['SIGTERM', 'SIGHUP', 'SIGINT', 'exit'])
+const signals: Set<SignalsEvents> = new Set([
+  'SIGTERM',
+  'SIGHUP',
+  'SIGINT',
+  'exit'
+])
 
-const handlers: Function[] = []
+const handlers: HandlerFunction[] = []
 
 let shuttingDown = false
 
-const shutdown = async (signal: any) => {
+const shutdown = async (signal: SignalsEvents | Error) => {
   if (shuttingDown) {
     return
   }
@@ -85,7 +100,7 @@ export class ShutdownCleanup {
    * @param {Function} handler
    * @memberof ShutdownCleanup
    */
-  static registerHandler (handler: Function) {
+  static registerHandler (handler: HandlerFunction) {
     handlers.push(handler)
     logger('Handler:', handler.toString())
   }
@@ -95,12 +110,15 @@ export class ShutdownCleanup {
    *
    * @static
    * @param {SignalsEvents} signal
+   * @returns {boolean} `true` if the signal was added
    * @memberof ShutdownCleanup
    */
-  static addSignal (signal: SignalsEvents) {
+  static addSignal (signal: SignalsEvents): boolean {
+    if (signals.has(signal)) return false
     signals.add(signal)
     attachListenerForEvent(signal)
     logger('Added signal:', signal)
+    return true
   }
 
   /**
@@ -108,12 +126,15 @@ export class ShutdownCleanup {
    *
    * @static
    * @param {SignalsEvents} signal
+   * @returns {boolean} `true` if the signal was removed
    * @memberof ShutdownCleanup
    */
-  static removeSignal (signal: SignalsEvents) {
+  static removeSignal (signal: SignalsEvents): boolean {
     if (signals.delete(signal)) {
       process.removeListener(signal, shutdown)
       logger('Removed signal:', signal)
+      return true
     }
+    return false
   }
 }
