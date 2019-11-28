@@ -137,4 +137,15 @@ export class ShutdownCleanup {
     }
     return false
   }
+
+  /**
+   * Returns an array of SignalEvents currently listened to.
+   *
+   * @static
+   * @returns {SignalsEvents[]} an array of `SignalEvents`
+   * @memberof ShutdownCleanup
+   */
+  static listSignals (): SignalsEvents[] {
+    return Array.from(signals)
+  }
 }
