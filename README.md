@@ -28,6 +28,7 @@ It is also possible to add (or remove) other shutdown signals/events.
   - [Register a handler](#register-a-handler)
   - [Add a signal or event to listen to](#add-a-signal-or-event-to-listen-to)
   - [Remove a signal or an event](#remove-a-signal-or-an-event)
+  - [List signals and events listened to](#list-signals-and-events-listened-to)
   - [TypeScript](#typescript)
   - [Uncaught Exceptions & other similar events](#uncaught-exceptions--other-similar-events)
     - [Handle parameter](#handle-parameter)
@@ -63,6 +64,12 @@ ShutdownCleanup.addSignal('uncaughtException')
 
 ```js
 ShutdownCleanup.removeSignal('SIGHUP')
+```
+
+### List signals and events listened to
+
+```js
+ShutdownCleanup.listSignals()
 ```
 
 ### TypeScript
