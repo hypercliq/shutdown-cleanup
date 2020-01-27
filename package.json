@@ -38,7 +38,7 @@
     "commander": "^4.0.1",
     "husky": "^4.0.2",
     "jest": "^24.9.0",
-    "lint-staged": "^9.5.0",
+    "lint-staged": "^10.0.3",
     "prettier-standard": "^16.0.0",
     "rimraf": "^3.0.0",
     "standard-version": "^7.0.1",
