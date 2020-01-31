@@ -1,7 +1,6 @@
 # Shutdown Cleanup _(shutdown-cleanup)_ <!-- omit in toc -->
 
-
-[![Build Status](https://travis-ci.org/hypercliq/shutdown-cleanup.svg?branch=master)](https://travis-ci.org/hypercliq/shutdown-cleanup)
+[![Node.js CI](https://github.com/hypercliq/shutdown-cleanup/workflows/Node.js%20CI/badge.svg)](https://github.com/hypercliq/shutdown-cleanup/)
 [![npm](https://img.shields.io/npm/v/@hypercliq/shutdown-cleanup)](https://www.npmjs.com/package/@hypercliq/shutdown-cleanup)
 [![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=hypercliq/shutdown-cleanup)](https://dependabot.com)
 
