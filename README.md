@@ -1,6 +1,5 @@
 # Shutdown Cleanup _(shutdown-cleanup)_ <!-- omit in toc -->
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/hypercliq/shutdown-cleanup.svg)](https://greenkeeper.io/)
 [![Build Status](https://travis-ci.org/hypercliq/shutdown-cleanup.svg?branch=master)](https://travis-ci.org/hypercliq/shutdown-cleanup)
 [![npm](https://img.shields.io/npm/v/@hypercliq/shutdown-cleanup)](https://www.npmjs.com/package/@hypercliq/shutdown-cleanup)
 
