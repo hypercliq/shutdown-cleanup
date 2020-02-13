@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 3.1.2-0 (2020-02-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* TS builds will fail
+
+* chore(release): 2.0.0
+
+* fix: better exit code
+
+* fix: export API types
+
+* test: if it ain't tested it's broken
+
+* chore(release): 2.0.1
+
+* chore: add travis
+
+* chore(release): 2.0.2
+* TS builds will fail
+
+* chore(release): 2.0.0
+
+### Bug Fixes
+
+* no default exports ([40e918d](https://github.com/hypercliq/shutdown-cleanup/commit/40e918d0549a5ce5640d17f2cbd59e662968615f))
+* **deps:** update pkgs ([#35](https://github.com/hypercliq/shutdown-cleanup/issues/35)) ([e1ecb13](https://github.com/hypercliq/shutdown-cleanup/commit/e1ecb1380a7d72fe01b71b019c5a6f2267de9770))
+
+
+* v2.0.2 (#4) ([f9bb24a](https://github.com/hypercliq/shutdown-cleanup/commit/f9bb24ae8c7f17b53012a2449d9885a553834945)), closes [#4](https://github.com/hypercliq/shutdown-cleanup/issues/4)
+* v2.0.0 (#3) ([ee2bf49](https://github.com/hypercliq/shutdown-cleanup/commit/ee2bf49fa809161297815fc08d6781a657a9d2ed)), closes [#3](https://github.com/hypercliq/shutdown-cleanup/issues/3)
+
 ## 3.1.1 (2020-01-31)
 
 ### Bug Fixes
@@ -33,33 +66,6 @@ All notable changes to this project will be documented in this file. See [standa
 
 - latest changes from upstream ([adbd248](https://github.com/hypercliq/shutdown-cleanup/commit/adbd2483a1405b469074fd5300ca400d005c7b42))
 
-## 3.0.0 (2019-11-11)
-
-### ⚠ BREAKING CHANGES
-
-- TS builds will fail
-
-- chore(release): 2.0.0
-
-- fix: better exit code
-
-- fix: export API types
-
-- test: if it ain't tested it's broken
-
-- chore(release): 2.0.1
-
-- chore: add travis
-
-- chore(release): 2.0.2
-- TS builds will fail
-
-- chore(release): 2.0.0
-
-- v2.0.2 (#4) ([f9bb24a](https://github.com/hypercliq/shutdown-cleanup/commit/f9bb24ae8c7f17b53012a2449d9885a553834945)), closes [#4](https://github.com/hypercliq/shutdown-cleanup/issues/4)
-- v2.0.0 (#3) ([ee2bf49](https://github.com/hypercliq/shutdown-cleanup/commit/ee2bf49fa809161297815fc08d6781a657a9d2ed)), closes [#3](https://github.com/hypercliq/shutdown-cleanup/issues/3)
-
-### [2.0.2](https://github.com/hypercliq/shutdown-cleanup/compare/v2.0.1...v2.0.2) (2019-11-11)
 
 ### [2.0.1](https://github.com/hypercliq/shutdown-cleanup/compare/v2.0.0...v2.0.1) (2019-11-11)
 
