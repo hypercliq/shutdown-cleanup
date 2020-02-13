@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### 3.1.2-0 (2020-02-13)
 
 - pre-release cleanups
-  
+
 ## 3.1.1 (2020-01-31)
 
 ### Bug Fixes
@@ -36,7 +36,6 @@ All notable changes to this project will be documented in this file. See [standa
 ### Bug Fixes
 
 - latest changes from upstream ([adbd248](https://github.com/hypercliq/shutdown-cleanup/commit/adbd2483a1405b469074fd5300ca400d005c7b42))
-
 
 ### [2.0.1](https://github.com/hypercliq/shutdown-cleanup/compare/v2.0.0...v2.0.1) (2019-11-11)
 
