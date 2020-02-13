@@ -1,5 +1,5 @@
 import debug from 'debug'
-import os from 'os'
+import * as os from 'os'
 
 /**
  * API type
@@ -100,7 +100,7 @@ export class ShutdownCleanup {
    * @param {Function} handler
    * @memberof ShutdownCleanup
    */
-  static registerHandler (handler: HandlerFunction) {
+  static registerHandler(handler: HandlerFunction) {
     handlers.push(handler)
     logger('Handler:', handler.toString())
   }
@@ -113,7 +113,7 @@ export class ShutdownCleanup {
    * @returns {boolean} `true` if the signal was added
    * @memberof ShutdownCleanup
    */
-  static addSignal (signal: SignalsEvents): boolean {
+  static addSignal(signal: SignalsEvents): boolean {
     if (signals.has(signal)) return false
     signals.add(signal)
     attachListenerForEvent(signal)
@@ -129,7 +129,7 @@ export class ShutdownCleanup {
    * @returns {boolean} `true` if the signal was removed
    * @memberof ShutdownCleanup
    */
-  static removeSignal (signal: SignalsEvents): boolean {
+  static removeSignal(signal: SignalsEvents): boolean {
     if (signals.delete(signal)) {
       process.removeListener(signal, shutdown)
       logger('Removed signal:', signal)
@@ -145,7 +145,7 @@ export class ShutdownCleanup {
    * @returns {SignalsEvents[]} an array of `SignalsEvents`
    * @memberof ShutdownCleanup
    */
-  static listSignals (): SignalsEvents[] {
+  static listSignals(): SignalsEvents[] {
     return Array.from(signals)
   }
 }
