@@ -28,7 +28,7 @@ export type SignalsEvents =
  * @interface HandlerFunction
  */
 export interface HandlerFunction {
-  (signal?: SignalsEvents | Error): any
+  (signal?: SignalsEvents | Error): unknown
 }
 
 const logger = debug('shutdown-cleanup')
@@ -44,7 +44,7 @@ const handlers: HandlerFunction[] = []
 
 let shuttingDown = false
 
-const shutdown = async (signal: SignalsEvents | Error) => {
+const shutdown = async (signal: SignalsEvents | Error): Promise<void> => {
   if (shuttingDown) {
     return
   }
@@ -67,8 +67,10 @@ const shutdown = async (signal: SignalsEvents | Error) => {
   process.exit(!exitCode || exitCode === 0 ? 1 : exitCode)
 }
 
-const attachListenerForEvent = (event: any) =>
-  process.removeAllListeners(event).addListener(event, shutdown)
+const attachListenerForEvent = (event: SignalsEvents): NodeJS.Process =>
+  process
+    .removeAllListeners(event)
+    .addListener(event as NodeJS.Signals, shutdown)
 
 signals.forEach(attachListenerForEvent)
 
@@ -100,7 +102,7 @@ export class ShutdownCleanup {
    * @param {Function} handler
    * @memberof ShutdownCleanup
    */
-  static registerHandler(handler: HandlerFunction) {
+  static registerHandler(handler: HandlerFunction): void {
     handlers.push(handler)
     logger('Handler:', handler.toString())
   }
