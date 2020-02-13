@@ -11,7 +11,7 @@ program
 
 program.parse(process.argv)
 
-function lookBusy () {
+function lookBusy() {
   let current = 0
   const timerId = setInterval(() => {
     if (current === 3) {
