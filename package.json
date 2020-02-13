@@ -9,7 +9,9 @@
     "build": "tsc",
     "test": "tsd && jest",
     "prerelease": "npm run clean && npm run build && npm test",
-    "release": "standard-version"
+    "release": "standard-version",
+    "format": "prettier --write \"**/*.{ts,js,md,yml}\"",
+    "lint": "eslint src --fix --ext .ts"
   },
   "repository": {
     "type": "git",
@@ -35,11 +37,15 @@
     "@commitlint/cli": "^8.3.5",
     "@commitlint/config-conventional": "^8.3.4",
     "@types/debug": "^4.1.5",
-    "commander": "^4.1.0",
+    "@types/node": "^13.7.1",
+    "@typescript-eslint/eslint-plugin": "^2.19.2",
+    "@typescript-eslint/parser": "^2.19.2",
+    "commander": "^4.1.1",
+    "eslint": "^6.8.0",
     "husky": "^4.2.3",
     "jest": "^25.1.0",
     "lint-staged": "^10.0.7",
-    "prettier-standard": "^16.1.0",
+    "prettier": "^1.19.1",
     "rimraf": "^3.0.2",
     "standard-version": "^7.1.0",
     "tsd": "^0.11.0",
