@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.2](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.2-0...v3.1.2) (2020-02-13)
+
+
+### Bug Fixes
+
+* lint errors ([184fcc8](https://github.com/hypercliq/shutdown-cleanup/commit/184fcc8a07aa02d8e6130ea681dc8882a91dea0c))
+
 ### 3.1.2-0 (2020-02-13)
 
 - pre-release cleanups
