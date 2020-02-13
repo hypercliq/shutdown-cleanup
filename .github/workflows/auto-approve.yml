@@ -1,9 +1,9 @@
 name: Auto approve
 
-on:
-  pull_request:
-    branches:
-      - 'dependabot/**'
+on: pull_request
+#   pull_request:
+#     branches:
+#       - 'dependabot/**'
 
 jobs:
   auto-approve:
