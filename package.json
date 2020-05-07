@@ -47,7 +47,7 @@
     "lint-staged": "^10.0.10",
     "prettier": "^1.19.1",
     "rimraf": "^3.0.2",
-    "standard-version": "^7.1.0",
+    "standard-version": "^8.0.0",
     "tsd": "^0.11.0",
     "typescript": "^3.8.3"
   },
