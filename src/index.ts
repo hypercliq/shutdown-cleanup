@@ -37,7 +37,7 @@ const signals: Set<SignalsEvents> = new Set([
   'SIGTERM',
   'SIGHUP',
   'SIGINT',
-  'exit'
+  'exit',
 ])
 
 const handlers: HandlerFunction[] = []
@@ -52,7 +52,7 @@ const shutdown = async (signal: SignalsEvents | Error): Promise<void> => {
 
   logger('Shutting down on', signal)
 
-  await Promise.all(handlers.map(h => h(signal)))
+  await Promise.all(handlers.map((h) => h(signal)))
 
   logger('Shutdown completed')
 

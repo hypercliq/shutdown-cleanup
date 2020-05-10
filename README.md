@@ -84,7 +84,7 @@ It is possible to listen to the `uncaughtException` event, but **_no_** error me
 #### Handle parameter
 
 ```js
-ShutdownCleanup.registerHandler(codeOrError =>
+ShutdownCleanup.registerHandler((codeOrError) =>
   console.log('This what we got back:', codeOrError)
 )
 ```

@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.4](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.3...v3.1.4) (2020-05-10)
+
+### Misc
+
+- **deps:** [security] bump acorn from 6.4.0 to 6.4.1 ([4b7e080](https://github.com/hypercliq/shutdown-cleanup/commit/4b7e08024faaef5ccb6c6e3ac5997e7ffa1e45dd))
+- **deps-dev:** bump @types/node from 13.7.6 to 13.7.7 ([02bbd29](https://github.com/hypercliq/shutdown-cleanup/commit/02bbd29eb8a1394f87b7344a8a1665ad55364036))
+- **deps-dev:** bump @types/node from 13.7.7 to 13.9.0 ([e4ba280](https://github.com/hypercliq/shutdown-cleanup/commit/e4ba280ac31742c4fe60a81e33f2a817e04f4039))
+- **deps-dev:** bump @types/node from 13.9.0 to 13.9.1 ([5358650](https://github.com/hypercliq/shutdown-cleanup/commit/53586507a3e98fd5eac28d50dc48db46a8b6c19b))
+- **deps-dev:** bump @types/node from 13.9.1 to 13.9.2 ([6bdd9e6](https://github.com/hypercliq/shutdown-cleanup/commit/6bdd9e6c4a4527f87f222d36c6a7e519ff8a0955))
+- **deps-dev:** bump @types/node from 13.9.2 to 13.9.3 ([8f29fa5](https://github.com/hypercliq/shutdown-cleanup/commit/8f29fa5766148adb2d2032a473d432a3d0e11a12))
+- **deps-dev:** bump @types/node from 13.9.3 to 13.9.4 ([6deee4f](https://github.com/hypercliq/shutdown-cleanup/commit/6deee4f183a76318c77d749e066368598a753649))
+- **deps-dev:** bump @types/node from 13.9.4 to 13.9.5 ([9208d53](https://github.com/hypercliq/shutdown-cleanup/commit/9208d5347293213538dc882a99d232b66eff5240))
+- **deps-dev:** bump @types/node from 13.9.5 to 13.9.8 ([5b96da6](https://github.com/hypercliq/shutdown-cleanup/commit/5b96da674679493a3d2ab9dbc78e217483b7d92f))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([e4e8b5b](https://github.com/hypercliq/shutdown-cleanup/commit/e4e8b5b465c845ba7f6d38f616782ddd6899056f))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([f956e8c](https://github.com/hypercliq/shutdown-cleanup/commit/f956e8cab5f67566b21500b7b266ec9aa7b3c149))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([4bed4aa](https://github.com/hypercliq/shutdown-cleanup/commit/4bed4aad07ade3d23abd2cfb2567f703f7947878))
+- **deps-dev:** bump @typescript-eslint/parser from 2.21.0 to 2.22.0 ([300cbc4](https://github.com/hypercliq/shutdown-cleanup/commit/300cbc400c360a4c6c47744b540051c1e7136124))
+- **deps-dev:** bump @typescript-eslint/parser from 2.22.0 to 2.23.0 ([bf61de2](https://github.com/hypercliq/shutdown-cleanup/commit/bf61de2c2776ba41d112f474fe6255c024571704))
+- **deps-dev:** bump @typescript-eslint/parser from 2.23.0 to 2.24.0 ([5ec4720](https://github.com/hypercliq/shutdown-cleanup/commit/5ec4720c2836c68db002ea5586dc63f7305bf871))
+- **deps-dev:** bump @typescript-eslint/parser from 2.24.0 to 2.27.0 ([7ca5deb](https://github.com/hypercliq/shutdown-cleanup/commit/7ca5debfabd10f01b1db866a445217ef42a46011))
+- **deps-dev:** bump commander from 4.1.1 to 5.0.0 ([2b68026](https://github.com/hypercliq/shutdown-cleanup/commit/2b68026ccacb543a2dd401c3b78e9cec8319986a))
+- **deps-dev:** bump husky from 4.2.3 to 4.2.5 ([67a5c0a](https://github.com/hypercliq/shutdown-cleanup/commit/67a5c0af96307a20dfc5f85923158723f2613aa4))
+- **deps-dev:** bump typescript from 3.8.2 to 3.8.3 ([c1c4f14](https://github.com/hypercliq/shutdown-cleanup/commit/c1c4f14c5b27568e1d851097597bac6bd7dcb914))
+- **npm:** update & audit pkgs ([5314eb7](https://github.com/hypercliq/shutdown-cleanup/commit/5314eb7a87778834d011328834e65515d3550071))
+- allow linting js files and typechecking .ts ([84e4837](https://github.com/hypercliq/shutdown-cleanup/commit/84e4837b4637f3f8dc7e394a4cfba30c2f7da90b))
+- **deps-dev:** bump lint-staged from 10.0.8 to 10.0.9 ([5365c28](https://github.com/hypercliq/shutdown-cleanup/commit/5365c289dce2c4f106a759c75519f15186b67a0f))
+- **deps-dev:** bump lint-staged from 10.0.9 to 10.0.10 ([ecaf096](https://github.com/hypercliq/shutdown-cleanup/commit/ecaf096106a70c2c2fcf03b5562a17d03d51f749))
+- move badge from shields.io to badgen ([2f264b3](https://github.com/hypercliq/shutdown-cleanup/commit/2f264b3766b34a0ee41a2b2a122bc9b425b6730c))
+
 ### [3.1.3](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.2...v3.1.3) (2020-02-27)
 
 ### Misc

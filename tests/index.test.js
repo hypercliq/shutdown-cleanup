@@ -4,21 +4,21 @@ const os = require('os')
 
 const programFile = path.resolve(__dirname, './program.js')
 
-const forkProcess = args => {
-  return new Promise(resolve => {
+const forkProcess = (args) => {
+  return new Promise((resolve) => {
     const proc = fork(programFile, args, { silent: true })
 
     let output = ''
 
-    proc.stdout.on('data', data => {
+    proc.stdout.on('data', (data) => {
       output += data.toString()
     })
 
-    proc.stderr.on('data', data => {
+    proc.stderr.on('data', (data) => {
       output += data.toString()
     })
 
-    proc.on('exit', code => {
+    proc.on('exit', (code) => {
       resolve([code, output])
     })
   })
