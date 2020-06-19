@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.6](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.5...v3.1.6) (2020-06-19)
+
+### Misc
+
+- **deps-dev:** bump lint-staged from 10.2.9 to 10.2.10 ([7652a5d](https://github.com/hypercliq/shutdown-cleanup/commit/7652a5d2f5f5d6e1219e50dbd2f9283e95d44de1))
+
 ### [3.1.5](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.4...v3.1.5) (2020-06-10)
 
 ### Misc
