@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.7](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.6...v3.1.7) (2020-06-24)
+
+### Misc
+
+- update packages ([0707983](https://github.com/hypercliq/shutdown-cleanup/commit/0707983a19443d7f0be75bcc1094d218c1f3f81a))
+
 ### [3.1.6](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.5...v3.1.6) (2020-06-19)
 
 ### Misc
