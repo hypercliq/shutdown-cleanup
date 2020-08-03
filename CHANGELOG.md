@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.8](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.7...v3.1.8) (2020-08-03)
+
+### Misc
+
+- update & audit packages ([1a71e8f](https://github.com/hypercliq/shutdown-cleanup/commit/1a71e8fe449951a90e4a8eb8b483b5107ea1f012))
+- **deps-dev:** bump @types/node from 14.0.14 to 14.0.22 ([17cd01d](https://github.com/hypercliq/shutdown-cleanup/commit/17cd01d9e303e9fa87f71d5636b8918d080b4565))
+- **deps-dev:** bump @types/node from 14.0.22 to 14.0.23 ([59d48c2](https://github.com/hypercliq/shutdown-cleanup/commit/59d48c267b1023720949f34ca69d23d2f20f3123))
+- **deps-dev:** bump @types/node from 14.0.23 to 14.0.26 ([e2c68aa](https://github.com/hypercliq/shutdown-cleanup/commit/e2c68aa0b5deff8db43120e0a2bacd7926dc676e))
+- **deps-dev:** bump @types/node from 14.0.26 to 14.0.27 ([ec32b17](https://github.com/hypercliq/shutdown-cleanup/commit/ec32b1708fb455fed4bf4b8ac053e19844f2b672))
+- **deps-dev:** bump standard-version from 8.0.0 to 8.0.1 ([d63f70f](https://github.com/hypercliq/shutdown-cleanup/commit/d63f70f241e097996291e41c066642a05cf6c3cb))
+- **deps-dev:** bump standard-version from 8.0.1 to 8.0.2 ([5b4240f](https://github.com/hypercliq/shutdown-cleanup/commit/5b4240f068e1c989f7371a37760403360390afd1))
+- **deps-dev:** bump typescript from 3.9.5 to 3.9.6 ([b53ad0f](https://github.com/hypercliq/shutdown-cleanup/commit/b53ad0f665e4cff173a563508b2df69ad55de26f))
+- **deps-dev:** bump typescript from 3.9.6 to 3.9.7 ([bc8ac3f](https://github.com/hypercliq/shutdown-cleanup/commit/bc8ac3f13748faea2c15d7724161fcbd0919124f))
+
 ### [3.1.7](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.6...v3.1.7) (2020-06-24)
 
 ### Misc
