@@ -4,6 +4,7 @@ module.exports = {
     { type: 'fix', section: 'Bug Fixes' },
     { type: 'chore', section: 'Misc', hidden: false },
     { type: 'build', section: 'Misc', hidden: false },
+    { type: 'ci', section: 'CI/CD', hidden: false },
     { type: 'docs', section: 'Documentation', hidden: false },
     { type: 'style', section: 'Refactoring', hidden: true },
     { type: 'refactor', section: 'Refactoring', hidden: false },
