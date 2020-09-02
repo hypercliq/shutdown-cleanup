@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.9](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.8...v3.1.9) (2020-09-02)
+
+### CI/CD
+
+- add node 14 ([f801c65](https://github.com/hypercliq/shutdown-cleanup/commit/f801c6555611aa9dcd1e798ce065ebe97db9d409))
+
+### Misc
+
+- add CI/CD section in CHANGELOG ([27dcba4](https://github.com/hypercliq/shutdown-cleanup/commit/27dcba475080bffce254a10eba7a35860eb20365))
+- update & audit packages ([a51fa49](https://github.com/hypercliq/shutdown-cleanup/commit/a51fa49db6f6facd58fe4a9076675f25d9aea90d))
+- **deps-dev:** bump @commitlint/config-conventional ([2cd686a](https://github.com/hypercliq/shutdown-cleanup/commit/2cd686a7449e7aac137e57bc06683f30e327791d))
+- **deps-dev:** bump lint-staged from 10.2.11 to 10.2.13 ([7a97458](https://github.com/hypercliq/shutdown-cleanup/commit/7a9745845193dc5c9c39e402e2915237c4ac4e0d))
+
 ### [3.1.8](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.7...v3.1.8) (2020-08-03)
 
 ### Misc
