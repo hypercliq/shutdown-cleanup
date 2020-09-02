@@ -1,5 +1,7 @@
 import { expectType, expectError } from 'tsd'
-import { ShutdownCleanup, HandlerFunction, SignalsEvents } from '../src/index'
+import { HandlerFunction } from '../src/HandlerFunction'
+import { ShutdownCleanup } from '../src/index'
+import { SignalsEvents } from '../src/SignalsEvents'
 
 const handler: HandlerFunction = (signal?: SignalsEvents | Error) => {}
 expectType<void>(ShutdownCleanup.registerHandler(handler))
