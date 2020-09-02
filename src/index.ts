@@ -1,78 +1,12 @@
-import debug from 'debug'
-import * as os from 'os'
-
-/**
- * API type
- *
- * These are the types accepted by `process.addListener()` and should be the types
- * accepted by `addSignal()` and `removeSignal()`
- */
-export type SignalsEvents =
-  | 'beforeExit'
-  | 'disconnect'
-  | 'exit'
-  | 'rejectionHandled'
-  | 'uncaughtException'
-  | 'unhandledRejection'
-  | 'warning'
-  | 'message'
-  | 'newListener'
-  | 'removeListener'
-  | 'multipleResolves'
-  | NodeJS.Signals
-
-/**
- * The handler function
- *
- * @export
- * @interface HandlerFunction
- */
-export interface HandlerFunction {
-  (signal?: SignalsEvents | Error): unknown
-}
-
-const logger = debug('shutdown-cleanup')
-
-const signals: Set<SignalsEvents> = new Set([
-  'SIGTERM',
-  'SIGHUP',
-  'SIGINT',
-  'exit',
-])
-
-const handlers: HandlerFunction[] = []
-
-let shuttingDown = false
-
-const shutdown = async (signal: SignalsEvents | Error): Promise<void> => {
-  if (shuttingDown) {
-    return
-  }
-  shuttingDown = true
-
-  logger('Shutting down on', signal)
-
-  await Promise.all(handlers.map((h) => h(signal)))
-
-  logger('Shutdown completed')
-
-  const exitCode =
-    typeof signal === 'number'
-      ? signal
-      : signal instanceof Error
-      ? (signal as NodeJS.ErrnoException).errno
-      : os.constants.signals[signal as NodeJS.Signals]
-
-  // should not exit with 0
-  process.exit(!exitCode || exitCode === 0 ? 1 : exitCode)
-}
-
-const attachListenerForEvent = (event: SignalsEvents): NodeJS.Process =>
-  process
-    .removeAllListeners(event)
-    .addListener(event as NodeJS.Signals, shutdown)
-
-signals.forEach(attachListenerForEvent)
+import { HandlerFunction } from './HandlerFunction'
+import {
+  handlers,
+  logger,
+  signals,
+  attachListenerForEvent,
+  shutdown,
+} from './utils'
+import { SignalsEvents } from './SignalsEvents'
 
 /**
  * Allows to register handlers for certain shutdown signals/events

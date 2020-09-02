@@ -30,13 +30,11 @@ ShutdownCleanup.registerHandler(console.log)
 lookBusy()
 
 if (program.uncaughtException) {
-  // eslint-disable-next-line
   foo()
 }
 
 if (program.unhandledRejection) {
   const p = new Promise((resolve, reject) => {
-    // eslint-disable-next-line
     if (false) resolve('never called :(')
     else reject(new Error('boom'))
   })
