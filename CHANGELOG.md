@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.10](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.9...v3.1.10) (2020-09-02)
+
+### Misc
+
+- **deps-dev:** bump @types/node from 14.6.2 to 14.6.3 ([d3bf36f](https://github.com/hypercliq/shutdown-cleanup/commit/d3bf36fca86137e500fc1e8647cd3b8f6e5dd9ec))
+
+### Refactoring
+
+- modular code ([87520fc](https://github.com/hypercliq/shutdown-cleanup/commit/87520fc59eaf507c36f016a5104850f5980d4645))
+
+### Tests
+
+- fix imports ([3e2b0f8](https://github.com/hypercliq/shutdown-cleanup/commit/3e2b0f884d1b83be4b6590da609845490a7db35f))
+
 ### [3.1.9](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.8...v3.1.9) (2020-09-02)
 
 ### CI/CD
