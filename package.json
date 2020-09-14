@@ -1,6 +1,6 @@
 {
   "name": "@hypercliq/shutdown-cleanup",
-  "version": "3.1.10",
+  "version": "3.1.11",
   "description": "Module to handle graceful shutdowns",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -10,7 +10,7 @@
     "build": "tsc",
     "postbuild": "npm run format",
     "test": "tsd && jest",
-    "prerelease": "npm test",
+    "prerelease": "npm run build && npm test",
     "release": "standard-version",
     "format": "prettier . --write",
     "lint": "eslint . --cache --fix"

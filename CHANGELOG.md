@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.11](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.10...v3.1.11) (2020-09-14)
+
+### Misc
+
+- fix npm scripts ([9bc8383](https://github.com/hypercliq/shutdown-cleanup/commit/9bc83839f886d7566b2ffa9bab79ea767ac6b0e7))
+- update & audit packages ([f660fe1](https://github.com/hypercliq/shutdown-cleanup/commit/f660fe1657cea009d66d5a9073bcd3ea7429a051))
+- update eslintrc ([4defc10](https://github.com/hypercliq/shutdown-cleanup/commit/4defc1075251fd7240fd67ae0cb8af101f4ca4e1))
+- **deps-dev:** bump @types/node from 14.6.3 to 14.6.4 ([c4334cd](https://github.com/hypercliq/shutdown-cleanup/commit/c4334cd87df0d069cd756668e9133c2bb8a33566))
+
+### CI/CD
+
+- add node 10.x to ci ([0bceaf3](https://github.com/hypercliq/shutdown-cleanup/commit/0bceaf32045b61ee2ed70ef69589d39b368af751))
+- update github nodejs ci ([56873a0](https://github.com/hypercliq/shutdown-cleanup/commit/56873a05fca532a151bd7ee7af2bec47fcdbeb52))
+
 ### [3.1.10](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.9...v3.1.10) (2020-09-02)
 
 ### Misc
