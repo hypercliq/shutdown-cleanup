@@ -45,7 +45,7 @@
     "commander": "^6.1.0",
     "eslint": "^7.9.0",
     "husky": "^4.3.0",
-    "jest": "^26.4.2",
+    "jest": "^26.5.3",
     "lint-staged": "^10.3.0",
     "prettier": "^2.1.1",
     "rimraf": "^3.0.2",
