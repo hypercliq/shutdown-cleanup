@@ -3,15 +3,11 @@ updates:
   - package-ecosystem: github-actions
     directory: '/'
     schedule:
-      interval: weekly
-      time: '03:00'
-      timezone: Europe/Athens
+      interval: daily
     open-pull-requests-limit: 10
   - package-ecosystem: npm
     directory: '/'
     schedule:
-      interval: weekly
-      time: '03:00'
-      timezone: Europe/Athens
+      interval: daily
     open-pull-requests-limit: 10
     versioning-strategy: increase
