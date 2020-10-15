@@ -1,6 +1,6 @@
 {
   "name": "@hypercliq/shutdown-cleanup",
-  "version": "3.1.11",
+  "version": "3.1.12",
   "description": "Module to handle graceful shutdowns",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
