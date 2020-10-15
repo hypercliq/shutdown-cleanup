@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.12](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.11...v3.1.12) (2020-10-15)
+
+### Misc
+
+- **deps:** bump debug from 4.1.1 to 4.2.0 ([c879a37](https://github.com/hypercliq/shutdown-cleanup/commit/c879a371cb3aea691c0340a47abdca97bcaa153d))
+- **deps:** update actions/setup-node requirement to v2.1.2 ([51df256](https://github.com/hypercliq/shutdown-cleanup/commit/51df256c50c14b791e98ca69aa8a29d6a29f816a))
+- **deps-dev:** bump @types/node from 14.10.1 to 14.11.8 ([dfb6127](https://github.com/hypercliq/shutdown-cleanup/commit/dfb6127195d82828f54c5b52114bf28ed414a065))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([85f02ee](https://github.com/hypercliq/shutdown-cleanup/commit/85f02ee01f1a8c8e8248c9b8c3c9cf58f2e96a2a))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([e373e7d](https://github.com/hypercliq/shutdown-cleanup/commit/e373e7d9ef277c5fca150dd0f64b14a8b36e7175))
+- **deps-dev:** bump @typescript-eslint/parser from 4.1.0 to 4.4.0 ([ed89e67](https://github.com/hypercliq/shutdown-cleanup/commit/ed89e67157614ef2f044d89b644ca528539b9440))
+- **deps-dev:** bump @typescript-eslint/parser from 4.4.0 to 4.4.1 ([1cc2692](https://github.com/hypercliq/shutdown-cleanup/commit/1cc2692c846d6c63c540943f7b467cafeaafb649))
+- **deps-dev:** bump eslint from 7.9.0 to 7.11.0 ([a07d0f5](https://github.com/hypercliq/shutdown-cleanup/commit/a07d0f56317854cc90c9e337dd0d5e716c9649b6))
+- **deps-dev:** bump jest from 26.4.2 to 26.5.3 ([f8f9f8e](https://github.com/hypercliq/shutdown-cleanup/commit/f8f9f8e4ece67020873ed2040dae188b28a01175))
+- **deps-dev:** bump lint-staged from 10.3.0 to 10.4.0 ([404daa6](https://github.com/hypercliq/shutdown-cleanup/commit/404daa6d3e1c94e7ed676ede48c371347265ba45))
+- **deps-dev:** bump prettier from 2.1.1 to 2.1.2 ([d4934d5](https://github.com/hypercliq/shutdown-cleanup/commit/d4934d5317e9581c0df65fb733120eca886ce393))
+- **deps-dev:** bump typescript from 4.0.2 to 4.0.3 ([702af5b](https://github.com/hypercliq/shutdown-cleanup/commit/702af5b6f94cd2f495c84cb50999746ae10b42d8))
+
 ### [3.1.11](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.10...v3.1.11) (2020-09-14)
 
 ### Misc
