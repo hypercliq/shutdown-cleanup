@@ -1,9 +1,10 @@
 # Shutdown Cleanup _(shutdown-cleanup)_ <!-- omit in toc -->
 
-[![Node.js CI](https://github.com/hypercliq/shutdown-cleanup/workflows/Node.js%20CI/badge.svg)](https://github.com/hypercliq/shutdown-cleanup/)
 [![npm](https://badgen.net/npm/v/@hypercliq/shutdown-cleanup)](https://www.npmjs.com/package/@hypercliq/shutdown-cleanup)
-[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=hypercliq/shutdown-cleanup)](https://dependabot.com)
+![Dependabot](https://badgen.net/github/dependabot/hypercliq/shutdown-cleanup?icon=dependabot)
 [![BCH compliance](https://bettercodehub.com/edge/badge/hypercliq/shutdown-cleanup?branch=master)](https://bettercodehub.com/)
+[![Node.js CI](https://github.com/hypercliq/shutdown-cleanup/workflows/Node.js%20CI/badge.svg)](https://github.com/hypercliq/shutdown-cleanup/)
+![CodeQL](https://github.com/hypercliq/shutdown-cleanup/workflows/CodeQL/badge.svg)
 
 > Module to handle applications' graceful shutdowns.
 
