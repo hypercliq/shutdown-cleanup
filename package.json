@@ -7,7 +7,7 @@
   "scripts": {
     "clean": "rimraf lib",
     "prebuild": "npm run clean && npm run lint",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.json",
     "postbuild": "npm run format",
     "test": "tsd && jest",
     "prerelease": "npm run build && npm test",
@@ -57,7 +57,9 @@
     "debug": "^4.2.0"
   },
   "files": [
-    "lib"
+    "lib/*.d.ts",
+    "lib/index.js",
+    "lib/utils.js"
   ],
   "tsd": {
     "directory": "tests"
