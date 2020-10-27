@@ -75,6 +75,15 @@ test('exit', async () => {
   expect(output).toMatch(/^42/)
 })
 
+test('quit', async () => {
+  const args = ['-q']
+
+  const [code, output] = await forkProcess(args)
+
+  expect(code).toBe(0)
+  expect(output).toMatch(/^0/)
+})
+
 test('Remove exit', async () => {
   const args = ['-e', '42', '-r', 'exit']
 
@@ -107,7 +116,7 @@ test('unhandledRejection not added', async () => {
 
   const [code, output] = await forkProcess(args)
 
-  expect(code).toBe(1)
+  expect(code).toBe(0)
   expect(output).toMatch('UnhandledPromiseRejectionWarning')
 })
 
