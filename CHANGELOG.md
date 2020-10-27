@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.13](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.12...v3.1.13) (2020-10-27)
+
+### Bug Fixes
+
+- return exitCode set by node or 1 if undefined ([985f131](https://github.com/hypercliq/shutdown-cleanup/commit/985f131c19693865d2e8c37158762958ab3fd3c5))
+- use badgen NOT shields.io ([caa8a98](https://github.com/hypercliq/shutdown-cleanup/commit/caa8a984b7f8f69a3ce8e5e0270c6bb437adf464))
+
+### Misc
+
+- do not include in npm.package useless files ([2d226be](https://github.com/hypercliq/shutdown-cleanup/commit/2d226beee92d0bbae86c1fbb77a87cf095e2cf80))
+- **deps-dev:** bump @types/node from 14.11.10 to 14.14.0 ([6256935](https://github.com/hypercliq/shutdown-cleanup/commit/62569357653ca3f4d741e9690033958940b79fc4))
+- **deps-dev:** bump @types/node from 14.11.8 to 14.11.10 ([72b5378](https://github.com/hypercliq/shutdown-cleanup/commit/72b5378ca4d50a0414cde3652ac9004d274da7e7))
+- **deps-dev:** bump @types/node from 14.14.0 to 14.14.2 ([433dcff](https://github.com/hypercliq/shutdown-cleanup/commit/433dcff49cf6381796bd1f9e9181f9ecdad08a60))
+- **deps-dev:** bump @types/node from 14.14.2 to 14.14.3 ([caab1cd](https://github.com/hypercliq/shutdown-cleanup/commit/caab1cdc6af8503af3ecfcd7963e510da3e009a5))
+- **deps-dev:** bump @types/node from 14.14.3 to 14.14.5 ([b356caa](https://github.com/hypercliq/shutdown-cleanup/commit/b356caaba14be24e8a933d5454b15aafc29cbc8e))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([5636d34](https://github.com/hypercliq/shutdown-cleanup/commit/5636d343158bcc8069412d2ecbf2a58e86478adc))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([9279b35](https://github.com/hypercliq/shutdown-cleanup/commit/9279b35365990b5185e8ce68a690bb26ac6471c0))
+- **deps-dev:** bump @typescript-eslint/parser from 4.4.1 to 4.5.0 ([c73910f](https://github.com/hypercliq/shutdown-cleanup/commit/c73910f37b9fb4fccaeb804f0b7de2368f2c8d36))
+- **deps-dev:** bump @typescript-eslint/parser from 4.5.0 to 4.6.0 ([092a3be](https://github.com/hypercliq/shutdown-cleanup/commit/092a3beaa846c1129c46a64ad0aad2b94c94cd93))
+- **deps-dev:** bump commander from 6.1.0 to 6.2.0 ([0094563](https://github.com/hypercliq/shutdown-cleanup/commit/0094563aa8ea3f140a4b9618ba96627b1ade7ed8))
+- **deps-dev:** bump eslint from 7.11.0 to 7.12.0 ([d45ef08](https://github.com/hypercliq/shutdown-cleanup/commit/d45ef083ebda1b7ee1db7841a1eac589550e976b))
+- **deps-dev:** bump eslint from 7.12.0 to 7.12.1 ([b0280b9](https://github.com/hypercliq/shutdown-cleanup/commit/b0280b9518e653eef5d4936110b42a1945666b6e))
+- **deps-dev:** bump jest from 26.5.3 to 26.6.0 ([3e10b35](https://github.com/hypercliq/shutdown-cleanup/commit/3e10b35ac1e1d7a7018bafdbe61c2706e76b5374))
+- **deps-dev:** bump jest from 26.6.0 to 26.6.1 ([b530455](https://github.com/hypercliq/shutdown-cleanup/commit/b530455d1b18b77774f2a810fafedd589a4e1fe0))
+- **deps-dev:** bump lint-staged from 10.4.0 to 10.4.2 ([6436867](https://github.com/hypercliq/shutdown-cleanup/commit/64368671023f1fdb80de0fab3ad5cde4f5a0235d))
+- **deps-dev:** bump lint-staged from 10.4.2 to 10.5.0 ([abe42ec](https://github.com/hypercliq/shutdown-cleanup/commit/abe42ec4426e47f90afff96005af1ca783f5a8cc))
+- **deps-dev:** bump typescript from 4.0.3 to 4.0.5 ([367f839](https://github.com/hypercliq/shutdown-cleanup/commit/367f839dd86cf3150490a0df7afe6fe71532218b))
+
+### Tests
+
+- report nodejs exit codes (error numbers) or 1 when undefined ([391a2ce](https://github.com/hypercliq/shutdown-cleanup/commit/391a2ceea5dcd8f42a15a61dc964d6cfe875205b))
+
+### Documentation
+
+- comments and updated README with new exit code section ([64e29bf](https://github.com/hypercliq/shutdown-cleanup/commit/64e29bf2d2c979496f4f0c35d610db8e5020a8b2))
+
 ### [3.1.12](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.11...v3.1.12) (2020-10-15)
 
 ### Misc

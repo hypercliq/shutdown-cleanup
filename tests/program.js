@@ -6,6 +6,7 @@ program
   .option('-a, --add-signal <signal>')
   .option('-r, --remove-signal <signal>')
   .option('-e, --exit <code>')
+  .option('-q, --quit')
   .option('-x, --uncaught-exception')
   .option('-y, --unhandled-rejection')
 
@@ -49,3 +50,7 @@ if (program.unhandledRejection) {
 if (program.killSignal) process.kill(process.pid, program.killSignal)
 
 if (program.exit) process.exitCode = program.exit
+
+if (program.quit) {
+  // when exiting normally do nothing
+}

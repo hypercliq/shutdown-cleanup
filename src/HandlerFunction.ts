@@ -1,7 +1,7 @@
 import { SignalsEvents } from './SignalsEvents'
 
 /**
- * The handler function
+ * The handler function to be called when shutdown signals/events are fired.
  *
  * @export
  * @interface HandlerFunction
