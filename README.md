@@ -1,4 +1,4 @@
-# Shutdown Cleanup _(shutdown-cleanup)_ <!-- omit in toc -->
+# ![ShutdownCleanup](logo.png) <!-- omit in toc -->
 
 [![npm](https://badgen.net/npm/v/@hypercliq/shutdown-cleanup)](https://www.npmjs.com/package/@hypercliq/shutdown-cleanup)
 ![Dependabot](https://badgen.net/github/dependabot/hypercliq/shutdown-cleanup?icon=dependabot)
