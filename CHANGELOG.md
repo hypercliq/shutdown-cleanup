@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.15](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.14...v3.1.15) (2020-11-14)
+
+### Documentation
+
+- :memo: add a couple of badges ([346f16b](https://github.com/hypercliq/shutdown-cleanup/commit/346f16b80fa529d19ae878bf5e8a7d2c4be1d5e8))
+
 ### [3.1.14](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.13...v3.1.14) (2020-11-14)
 
 ### Documentation
