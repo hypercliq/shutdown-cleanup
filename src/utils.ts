@@ -1,8 +1,14 @@
-import debug from 'debug'
 import * as os from 'os'
 import { HandlerFunction } from './HandlerFunction'
 import { SignalsEvents } from './SignalsEvents'
-export const logger = debug('shutdown-cleanup')
+
+export const logger = (...message: unknown[]): void => {
+  if (
+    !!process.env.DEBUG &&
+    /(?:^shutdown-cleanup$|^\*$)/.test(process.env.DEBUG)
+  )
+    console.debug('🐞shutdown-cleanup', ...message)
+}
 
 export const signals: Set<SignalsEvents> = new Set([
   'SIGTERM',

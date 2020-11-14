@@ -9,6 +9,7 @@ program
   .option('-q, --quit')
   .option('-x, --uncaught-exception')
   .option('-y, --unhandled-rejection')
+  .option('--debug <name>')
 
 program.parse(process.argv)
 
@@ -25,6 +26,10 @@ function lookBusy() {
 if (program.addSignal) ShutdownCleanup.addSignal(program.addSignal)
 
 if (program.removeSignal) ShutdownCleanup.removeSignal(program.removeSignal)
+
+if (program.debug) {
+  process.env.DEBUG = program.debug
+}
 
 ShutdownCleanup.registerHandler(console.log)
 
