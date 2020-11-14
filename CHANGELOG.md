@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.14](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.13...v3.1.14) (2020-11-14)
+
+### Documentation
+
+- update badge ([59e461b](https://github.com/hypercliq/shutdown-cleanup/commit/59e461b7fc8af4f70054ff7e025be8e631b643a5))
+
+### Misc
+
+- new logo ([64552aa](https://github.com/hypercliq/shutdown-cleanup/commit/64552aaf2fece046d854dff2fabb2ee4bd4af45c))
+- **deps-dev:** bump @types/node from 14.14.5 to 14.14.6 ([6b80f4b](https://github.com/hypercliq/shutdown-cleanup/commit/6b80f4be80cfcb52db071fc34aecc8a9449473fd))
+- **deps-dev:** bump @types/node from 14.14.6 to 14.14.7 ([198eacf](https://github.com/hypercliq/shutdown-cleanup/commit/198eacfda58652496c9c10eabb12b071dd11d9a0))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([7417821](https://github.com/hypercliq/shutdown-cleanup/commit/7417821885c6499eef19f4c830d6b33ff1a60989))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([4840d68](https://github.com/hypercliq/shutdown-cleanup/commit/4840d68cae10df0560641f853a873a8080e9b0c5))
+- **deps-dev:** bump @typescript-eslint/parser from 4.6.0 to 4.6.1 ([6113314](https://github.com/hypercliq/shutdown-cleanup/commit/61133142952667a13a6a2da745fe90cf2a76faaf))
+- **deps-dev:** bump @typescript-eslint/parser from 4.6.1 to 4.7.0 ([a5e03f9](https://github.com/hypercliq/shutdown-cleanup/commit/a5e03f954d330442acc6170bbb7eba6abff9a147))
+- **deps-dev:** bump eslint from 7.12.1 to 7.13.0 ([f15be55](https://github.com/hypercliq/shutdown-cleanup/commit/f15be5557a7caf8e606c6a4dca23a742196fe0c7))
+- **deps-dev:** bump jest from 26.6.1 to 26.6.2 ([645db05](https://github.com/hypercliq/shutdown-cleanup/commit/645db052c1f1283e31fb627c14c8b8e565fb0405))
+- **deps-dev:** bump jest from 26.6.2 to 26.6.3 ([024c1cf](https://github.com/hypercliq/shutdown-cleanup/commit/024c1cf7c262ba26eae4238b8469680d7d9b3e12))
+- **deps-dev:** bump lint-staged from 10.5.0 to 10.5.1 ([b353587](https://github.com/hypercliq/shutdown-cleanup/commit/b35358797044c78f6f6f8b4b857043f500e0cdb8))
+
+### Refactoring
+
+- :fire: remove debug dependency ([ff5719d](https://github.com/hypercliq/shutdown-cleanup/commit/ff5719d72aec8628a515fb74f6ecfc213677e498))
+
+### CI/CD
+
+- add node 15 to builds ([6a2b096](https://github.com/hypercliq/shutdown-cleanup/commit/6a2b09648dc53bd99a582f20de4bfc397862fd7c))
+- change main branch to 'main' ([d99deff](https://github.com/hypercliq/shutdown-cleanup/commit/d99deff8a7bf25621e904a7f3a05f1f00a3dfdf4))
+
 ### [3.1.13](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.12...v3.1.13) (2020-10-27)
 
 ### Bug Fixes
