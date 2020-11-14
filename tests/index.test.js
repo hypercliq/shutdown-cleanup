@@ -116,8 +116,16 @@ test('unhandledRejection not added', async () => {
 
   const [code, output] = await forkProcess(args)
 
-  expect(code).toBe(0)
-  expect(output).toMatch('UnhandledPromiseRejectionWarning')
+  const nodejs_version = parseInt(
+    process.versions.node.split('.')[0].trim(),
+    10
+  )
+  // node v15 and above exits with a non-zero code for this
+  const exit_code = nodejs_version <= 14 ? 0 : 1
+  expect(code).toBe(exit_code)
+  const error_msg =
+    nodejs_version <= 14 ? 'UnhandledPromiseRejectionWarning' : 'Error: boom'
+  expect(output).toMatch(error_msg)
 })
 
 test('unhandledRejection added', async () => {
