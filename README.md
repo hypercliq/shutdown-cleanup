@@ -107,6 +107,13 @@ or Windows
 set DEBUG=shutdown-cleanup & npm start
 ```
 
+**shutdown-cleanup** does **_not_** depend on [debug](https://www.npmjs.com/package/debug) while being fully compatible with it. This means that it works with or without `debug` as a dependency.
+
+```sh
+# compatible with debug
+DEBUG=* npm start
+```
+
 ## Exit codes
 
 In previous versions, `shutdown-cleanup` returned an exit code of `1` whenever an exit code (error number) was `undefined` or was `0`. This behaviour has changed from `v3.1.13`.

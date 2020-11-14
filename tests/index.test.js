@@ -128,3 +128,39 @@ test('unhandledRejection added', async () => {
   expect(code).toBe(1)
   expect(output).toMatch(/^Error: boom/)
 })
+
+test('debug for shutdown-cleanup', async () => {
+  const args = ['--debug', 'shutdown-cleanup']
+
+  const [code, output] = await forkProcess(args)
+
+  expect(code).toBe(0)
+  expect(output).toMatch(/^🐞shutdown-cleanup/)
+})
+
+test('debug for *', async () => {
+  const args = ['--debug', '*']
+
+  const [code, output] = await forkProcess(args)
+
+  expect(code).toBe(0)
+  expect(output).toMatch(/^🐞shutdown-cleanup/)
+})
+
+test('debug for some other module', async () => {
+  const args = ['--debug', 'some-module']
+
+  const [code, output] = await forkProcess(args)
+
+  expect(code).toBe(0)
+  expect(output).not.toMatch(/^🐞shutdown-cleanup/)
+})
+
+test('no debug', async () => {
+  const args = []
+
+  const [code, output] = await forkProcess(args)
+
+  expect(code).toBe(0)
+  expect(output).not.toMatch(/^🐞shutdown-cleanup/)
+})
