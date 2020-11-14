@@ -25,6 +25,7 @@ It is also possible to add (or remove) other shutdown signals/events.
 
 ## Table of Contents <!-- omit in toc -->
 
+- [Node compatibility](#node-compatibility)
 - [Install](#install)
 - [Usage](#usage)
   - [Register a handler](#register-a-handler)
@@ -39,6 +40,15 @@ It is also possible to add (or remove) other shutdown signals/events.
 - [Changelog](#changelog)
 - [Contributing](#contributing)
 - [License](#license)
+
+## Node compatibility
+
+Tested in [nodejs](https://nodejs.org) version:
+
+- 10
+- 12
+- 14
+- 15 (see [Exit codes](#exit-codes))
 
 ## Install
 
@@ -122,7 +132,7 @@ Now, `shutdown-cleanup` relays the code number associated with the signal that c
 
 In some cases (when signal is an `Error`), the code number (`errno`) might be `undefined`. In those cases, `shutdown-cleanup` sets the exit code to 1.
 
-Note that `shutdown-cleanup` reports `unhandledRejection` exit code as `0`. This is in line with what node is actually returning. In fact, `unhandledRejection` produces this deprecation warning:
+For node versions \*less than **v15\***, `shutdown-cleanup` reports `unhandledRejection` exit code as `0`. This is in line with what node is actually returning. In fact, `unhandledRejection` produces this deprecation warning:
 
 ```sh
 DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code.
