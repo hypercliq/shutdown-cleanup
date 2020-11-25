@@ -27,10 +27,6 @@ if (program.addSignal) ShutdownCleanup.addSignal(program.addSignal)
 
 if (program.removeSignal) ShutdownCleanup.removeSignal(program.removeSignal)
 
-if (program.debug) {
-  process.env.DEBUG = program.debug
-}
-
 ShutdownCleanup.registerHandler(console.log)
 
 lookBusy()
