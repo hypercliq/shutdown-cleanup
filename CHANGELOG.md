@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.2.1](https://github.com/hypercliq/shutdown-cleanup/compare/v3.2.0...v3.2.1) (2021-01-04)
+
+### Misc
+
+- :package: update eslint-config-prettier ([84c9e41](https://github.com/hypercliq/shutdown-cleanup/commit/84c9e41f8ecd8b89f0919001cae0ba54f463cf65))
+- **deps:** bump actions/setup-node from v2.1.2 to v2.1.4 ([90e1711](https://github.com/hypercliq/shutdown-cleanup/commit/90e1711f1a337d311bbf8af3701d5a475ed01489))
+- **deps:** bump ini from 1.3.5 to 1.3.8 ([309b987](https://github.com/hypercliq/shutdown-cleanup/commit/309b98752cb4b71fdbb8375120340c32342773d9))
+- **deps:** bump node-notifier from 8.0.0 to 8.0.1 ([89657ab](https://github.com/hypercliq/shutdown-cleanup/commit/89657ab37382921e9b72d3d9a67d524ea12267a9))
+- **deps-dev:** bump @types/node from 14.14.10 to 14.14.11 ([69a480d](https://github.com/hypercliq/shutdown-cleanup/commit/69a480d6300ad5b5659249d66415d947f7e16360))
+- **deps-dev:** bump @types/node from 14.14.11 to 14.14.12 ([9242cf9](https://github.com/hypercliq/shutdown-cleanup/commit/9242cf9277157e1bd9ff0ed5fae2a83e52527e4a))
+- **deps-dev:** bump @types/node from 14.14.12 to 14.14.13 ([61a446f](https://github.com/hypercliq/shutdown-cleanup/commit/61a446fac62d82e84541e3b362f81044260554ec))
+- **deps-dev:** bump @types/node from 14.14.13 to 14.14.14 ([c849c69](https://github.com/hypercliq/shutdown-cleanup/commit/c849c695c776ecf4e1058c75351e32f05a2c5885))
+- **deps-dev:** bump @types/node from 14.14.14 to 14.14.16 ([c11dbb2](https://github.com/hypercliq/shutdown-cleanup/commit/c11dbb2912ebe1ed5b441e11bea34c24d7838f87))
+- **deps-dev:** bump @types/node from 14.14.16 to 14.14.17 ([8a3ac07](https://github.com/hypercliq/shutdown-cleanup/commit/8a3ac0768e9254e38b49cb631b3706a782202ace))
+- **deps-dev:** bump @types/node from 14.14.17 to 14.14.19 ([cd90d8a](https://github.com/hypercliq/shutdown-cleanup/commit/cd90d8a5123999555ff4d7b7a88a33c5dcadd0fb))
+- **deps-dev:** bump @types/node from 14.14.9 to 14.14.10 ([9b79b1f](https://github.com/hypercliq/shutdown-cleanup/commit/9b79b1f134a408c19e3b251d819c59b320064291))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([75ae5f1](https://github.com/hypercliq/shutdown-cleanup/commit/75ae5f1dcfe6fcdab24d0e3ad8f586b28355d511))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([56924ea](https://github.com/hypercliq/shutdown-cleanup/commit/56924eaf060f08ea184e74cafc38a9404d4931a5))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([4b370da](https://github.com/hypercliq/shutdown-cleanup/commit/4b370da4afe48bedc3f8871f97847f525bf2030e))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([961a4a4](https://github.com/hypercliq/shutdown-cleanup/commit/961a4a48bf0f05dc00b54c87cab22bfd60c5efc9))
+- **deps-dev:** bump @typescript-eslint/eslint-plugin ([7253d68](https://github.com/hypercliq/shutdown-cleanup/commit/7253d68886bd3900ce60075c4085d959ccadb23d))
+- **deps-dev:** bump @typescript-eslint/parser from 4.10.0 to 4.11.0 ([8aa7ae0](https://github.com/hypercliq/shutdown-cleanup/commit/8aa7ae0347acd9170359436a47dffc5880239e92))
+- **deps-dev:** bump @typescript-eslint/parser from 4.11.0 to 4.11.1 ([19bf248](https://github.com/hypercliq/shutdown-cleanup/commit/19bf2481e0fe6ba52f173b694176035d8221ed51))
+- **deps-dev:** bump @typescript-eslint/parser from 4.8.2 to 4.9.0 ([1e6026d](https://github.com/hypercliq/shutdown-cleanup/commit/1e6026d94b2d86b00cb15bbe9293152bdfd9116b))
+- **deps-dev:** bump @typescript-eslint/parser from 4.9.0 to 4.9.1 ([5588f7d](https://github.com/hypercliq/shutdown-cleanup/commit/5588f7df33130130c5d0b8425bb2ff67cd3bda41))
+- **deps-dev:** bump @typescript-eslint/parser from 4.9.1 to 4.10.0 ([8a463fd](https://github.com/hypercliq/shutdown-cleanup/commit/8a463fdb19191a0ad95ba8c01df7ced5db55b84b))
+- **deps-dev:** bump commander from 6.2.0 to 6.2.1 ([d63b1c8](https://github.com/hypercliq/shutdown-cleanup/commit/d63b1c821664babf0dfc53cedac509cbb667c27f))
+- **deps-dev:** bump eslint from 7.14.0 to 7.15.0 ([97e52ea](https://github.com/hypercliq/shutdown-cleanup/commit/97e52ea117fc201a795cd37430d221814519ae90))
+- **deps-dev:** bump eslint from 7.15.0 to 7.16.0 ([818dce9](https://github.com/hypercliq/shutdown-cleanup/commit/818dce9e4471c3dbed802396e4e1a7c37ff65cf3))
+- **deps-dev:** bump eslint from 7.16.0 to 7.17.0 ([7d6e917](https://github.com/hypercliq/shutdown-cleanup/commit/7d6e917242ab072fa1100fa515930791ffe0efca))
+- **deps-dev:** bump husky from 4.3.0 to 4.3.5 ([689de62](https://github.com/hypercliq/shutdown-cleanup/commit/689de62098adbd21626b57b74ddcbacc96311750))
+- **deps-dev:** bump husky from 4.3.5 to 4.3.6 ([ff2dabb](https://github.com/hypercliq/shutdown-cleanup/commit/ff2dabbaf1c9fb68cc457365f26b8934b9e4a804))
+- **deps-dev:** bump lint-staged from 10.5.2 to 10.5.3 ([be65359](https://github.com/hypercliq/shutdown-cleanup/commit/be65359de65b39cc11da79de86dcdcd3e13c8a33))
+- **deps-dev:** bump prettier from 2.2.0 to 2.2.1 ([d1bfd3b](https://github.com/hypercliq/shutdown-cleanup/commit/d1bfd3b257498ae26ca2a1bcb912a4b9df1c3929))
+- **deps-dev:** bump rollup from 2.33.3 to 2.34.0 ([46d1132](https://github.com/hypercliq/shutdown-cleanup/commit/46d1132391006a0b258db253f3473b20a65eb5a6))
+- **deps-dev:** bump rollup from 2.34.0 to 2.34.1 ([db267d5](https://github.com/hypercliq/shutdown-cleanup/commit/db267d5239d69c207fae0510ba2ff9fed6930684))
+- **deps-dev:** bump rollup from 2.34.1 to 2.34.2 ([05d9c10](https://github.com/hypercliq/shutdown-cleanup/commit/05d9c1035cf28556eb2695ba344070d4814c2f8b))
+- **deps-dev:** bump rollup from 2.34.2 to 2.35.1 ([b8781fb](https://github.com/hypercliq/shutdown-cleanup/commit/b8781fb773f21800d4fdd8abea8665eff59b296b))
+- **deps-dev:** bump standard-version from 9.0.0 to 9.1.0 ([a53546b](https://github.com/hypercliq/shutdown-cleanup/commit/a53546b87cf8dfbce21c8efb90f833fa0399bfc0))
+- **deps-dev:** bump tsd from 0.13.1 to 0.14.0 ([991d77c](https://github.com/hypercliq/shutdown-cleanup/commit/991d77c47a6e9a08e7ff2b3483dad7351dc02e21))
+- **deps-dev:** bump typescript from 4.1.2 to 4.1.3 ([6841365](https://github.com/hypercliq/shutdown-cleanup/commit/684136538ec85a77ee60768b743ecec1f6a0c0d4))
+
 ## [3.2.0](https://github.com/hypercliq/shutdown-cleanup/compare/v3.1.13...v3.2.0) (2020-11-25)
 
 ### Features
