@@ -13,6 +13,8 @@ program
 
 program.parse(process.argv)
 
+const opts = program.opts()
+
 function lookBusy() {
   let current = 0
   const timerId = setInterval(() => {
@@ -23,19 +25,19 @@ function lookBusy() {
   }, 100)
 }
 
-if (program.addSignal) ShutdownCleanup.addSignal(program.addSignal)
+if (opts.addSignal) ShutdownCleanup.addSignal(opts.addSignal)
 
-if (program.removeSignal) ShutdownCleanup.removeSignal(program.removeSignal)
+if (opts.removeSignal) ShutdownCleanup.removeSignal(opts.removeSignal)
 
 ShutdownCleanup.registerHandler(console.log)
 
 lookBusy()
 
-if (program.uncaughtException) {
+if (opts.uncaughtException) {
   foo()
 }
 
-if (program.unhandledRejection) {
+if (opts.unhandledRejection) {
   const p = new Promise((resolve, reject) => {
     if (false) resolve('never called :(')
     else reject(new Error('boom'))
@@ -48,10 +50,12 @@ if (program.unhandledRejection) {
   badCall()
 }
 
-if (program.killSignal) process.kill(process.pid, program.killSignal)
+if (opts.killSignal) {
+  process.kill(process.pid, opts.killSignal)
+}
 
-if (program.exit) process.exitCode = program.exit
+if (opts.exit) process.exitCode = opts.exit
 
-if (program.quit) {
+if (opts.quit) {
   // when exiting normally do nothing
 }
