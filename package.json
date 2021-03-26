@@ -5,6 +5,9 @@
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
+  "engines": {
+    "node": ">10"
+  },
   "scripts": {
     "clean": "rimraf lib",
     "build": "tsc -p tsconfig.declaration.json && node esbuild.config.js",
