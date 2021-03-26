@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // "module": "amd",
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outFile": "lib/index.d.ts",
+    "outDir": "lib",
+    "isolatedModules": false
+  },
+  "exclude": ["tests"]
+}
