@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.0.0](https://github.com/hypercliq/shutdown-cleanup/compare/v3.2.1...v4.0.0) (2021-03-26)
+
+### Tests
+
+- :white_check_mark: update for latest commander version ([7ca5c61](https://github.com/hypercliq/shutdown-cleanup/commit/7ca5c6113e3e01b70810eb380dafdda382cf5d6b))
+
+### CI/CD
+
+- :boom: remove support for node<=10 ([2e4532c](https://github.com/hypercliq/shutdown-cleanup/commit/2e4532c41865d05463fdba5167c48a289c3b70a7))
+- **dependabot:** :green_heart: remove dependabot automerge action ([2352ec7](https://github.com/hypercliq/shutdown-cleanup/commit/2352ec77725d8ae1089c971faa83e8f8aec5cd09))
+
 ### [3.2.1](https://github.com/hypercliq/shutdown-cleanup/compare/v3.2.0...v3.2.1) (2021-01-04)
 
 ### Misc

@@ -47,10 +47,11 @@ It is also possible to add (or remove) other shutdown signals/events.
 
 Tested in [nodejs](https://nodejs.org) version:
 
-- 10
 - 12
 - 14
 - 15 (see [Exit codes](#exit-codes))
+
+**Version `4.0.0` drops compatibility with node <= 10.**
 
 ## Install
 
