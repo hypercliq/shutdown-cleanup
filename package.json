@@ -14,11 +14,10 @@
     "pretest": "npm run lint",
     "test": "tsd && jest",
     "posttest": "npm run format",
-    "prerelease": "npm t",
     "release": "standard-version",
     "format": "prettier --loglevel warn --write .",
     "lint": "eslint . --cache --fix --ext .ts,.tsx",
-    "prepublishOnly": "npm t",
+    "prepublishOnly": "npm run clean && npm run build && npm t",
     "prepare": "husky install"
   },
   "repository": {
