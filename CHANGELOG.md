@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.0.1](https://github.com/hypercliq/shutdown-cleanup/compare/v4.0.0...v4.0.1) (2021-05-18)
+
+### Build
+
+- **deps:** bump actions/checkout from 2 to 2.3.4 ([f3b0fd7](https://github.com/hypercliq/shutdown-cleanup/commit/f3b0fd7d22c1ae71a272fc12c86ecae13b02edc7))
+- **deps-dev:** bump eslint from 7.22.0 to 7.23.0 ([2e73134](https://github.com/hypercliq/shutdown-cleanup/commit/2e7313429508b3d65b5dc13ee329bbf1b9cf80b1))
+- **npm:** :arrow_up: upgrade deps ([d7ab404](https://github.com/hypercliq/shutdown-cleanup/commit/d7ab404bed9f60ca614c5a3c4ad01b480895b7a3))
+- **npm:** :wrench: explicit node support >=12 ([2ffa422](https://github.com/hypercliq/shutdown-cleanup/commit/2ffa4228f97825ffb75c9b73adad30187d55800d))
+
+### Chores
+
+- **changelog:** unhide sections ([0ebe641](https://github.com/hypercliq/shutdown-cleanup/commit/0ebe641a4190dc55d582dbe7e25e82531ade3d09))
+- **npm:** :fire: remove 'prerelease' script ([ae3ce05](https://github.com/hypercliq/shutdown-cleanup/commit/ae3ce05b46980df9daff5423ca5645e41f3fb852))
+
 ## [4.0.0](https://github.com/hypercliq/shutdown-cleanup/compare/v3.2.1...v4.0.0) (2021-03-26)
 
 ### Tests
