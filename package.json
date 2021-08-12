@@ -47,7 +47,7 @@
   },
   "homepage": "https://github.com/hypercliq/shutdown-cleanup#readme",
   "devDependencies": {
-    "@commitlint/cli": "^12.1.4",
+    "@commitlint/cli": "^13.1.0",
     "@commitlint/config-conventional": "^12.1.4",
     "@types/node": "^15.14.0",
     "@typescript-eslint/eslint-plugin": "^4.28.1",
