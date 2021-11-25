@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.1.0](https://github.com/hypercliq/shutdown-cleanup/compare/v4.0.2...v4.1.0) (2021-11-25)
+
+### Features
+
+- **node:** :wrench: support node 17 ([bd66ceb](https://github.com/hypercliq/shutdown-cleanup/commit/bd66ceb48100eb9ec9aae7721444cfa6f0003f83))
+
+### Chores
+
+- **github-action:** :fire: remove action ([fe6fbed](https://github.com/hypercliq/shutdown-cleanup/commit/fe6fbeddf59c85c0836b8d1a0067f223ff282738))
+
+### Refactoring
+
+- :recycle: code organisation ([3fe46de](https://github.com/hypercliq/shutdown-cleanup/commit/3fe46de753d7b5bc8a1fcbb53c8ae3d0614056db))
+
+### Build
+
+- **deps:** bump actions/checkout from 2.3.4 to 2.4.0 ([80ca76a](https://github.com/hypercliq/shutdown-cleanup/commit/80ca76a29419dfe5181afaa4e4e6e54beeab48f5))
+- **deps:** bump actions/setup-node from 2.4.0 to 2.4.1 ([068c68c](https://github.com/hypercliq/shutdown-cleanup/commit/068c68c8cdf410804241ae7acd82366bb3e2f96b))
+- **npm:** :arrow_up: upgrade deps ([ca0b929](https://github.com/hypercliq/shutdown-cleanup/commit/ca0b92952bbc4c08b4de3bbc5cba279ee8b126b6))
+
 ### [4.0.2](https://github.com/hypercliq/shutdown-cleanup/compare/v4.0.1...v4.0.2) (2021-09-16)
 
 ### Style
