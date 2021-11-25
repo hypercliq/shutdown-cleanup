@@ -1,23 +1,7 @@
 import * as os from 'os'
-import { HandlerFunction } from './HandlerFunction'
-import { SignalsEvents } from './SignalsEvents'
-
-const { DEBUG } = process.env
-
-const enabled = DEBUG && /(?:^shutdown-cleanup$|^\*$)/.test(DEBUG)
-
-export const logger = (...message: unknown[]): void => {
-  if (enabled) console.debug('🐞shutdown-cleanup', ...message)
-}
-
-export const signals: Set<SignalsEvents> = new Set([
-  'SIGTERM',
-  'SIGHUP',
-  'SIGINT',
-  'exit',
-])
-
-export const handlers: HandlerFunction[] = []
+import { handlers } from './handler'
+import { logger } from './logger'
+import { signals, SignalsEvents } from './signal'
 
 let shuttingDown = false
 

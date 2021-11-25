@@ -1,4 +1,4 @@
-import { SignalsEvents } from './SignalsEvents'
+import { SignalsEvents } from './signal'
 
 /**
  * The handler function to be called when shutdown signals/events are fired.
@@ -10,3 +10,5 @@ import { SignalsEvents } from './SignalsEvents'
 export interface HandlerFunction {
   (signal?: SignalsEvents | Error): unknown
 }
+
+export const handlers: HandlerFunction[] = []

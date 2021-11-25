@@ -18,3 +18,10 @@ export type SignalsEvents =
   | 'removeListener'
   | 'multipleResolves'
   | NodeJS.Signals
+
+export const signals: Set<SignalsEvents> = new Set([
+  'SIGTERM',
+  'SIGHUP',
+  'SIGINT',
+  'exit',
+])
