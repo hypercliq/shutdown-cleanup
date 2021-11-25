@@ -49,7 +49,8 @@ Tested in [nodejs](https://nodejs.org) version:
 
 - 12
 - 14
-- 15 (see [Exit codes](#exit-codes))
+- 16 (see [Exit codes](#exit-codes))
+- 17
 
 **Version `4.0.0` drops compatibility with node <= 10.**
 
