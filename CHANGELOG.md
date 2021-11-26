@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.1.1](https://github.com/hypercliq/shutdown-cleanup/compare/v4.1.0...v4.1.1) (2021-11-26)
+
+### Fixes
+
+- **logger:** :bug: logger not printing debug messages ([aa35fed](https://github.com/hypercliq/shutdown-cleanup/commit/aa35feda9ee54ba7fe7fad82014f94a844d04afe))
+
 ## [4.1.0](https://github.com/hypercliq/shutdown-cleanup/compare/v4.0.2...v4.1.0) (2021-11-25)
 
 ### Features
