@@ -19,6 +19,9 @@ export type SignalsEvents =
   | 'multipleResolves'
   | NodeJS.Signals
 
+/**
+ * Default signals to listen to.
+ */
 export const signals: Set<SignalsEvents> = new Set([
   'SIGTERM',
   'SIGHUP',

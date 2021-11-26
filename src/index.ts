@@ -1,6 +1,6 @@
-import * as utils from './core'
+import { attachListenerForEvent, shutdown } from './core'
 import { HandlerFunction, handlers } from './handler'
-import * as DEBUG from './logger'
+import { logger } from './logger'
 import { signals, SignalsEvents } from './signal'
 
 /**
@@ -33,7 +33,7 @@ export class ShutdownCleanup {
    */
   static registerHandler(handler: HandlerFunction): void {
     handlers.push(handler)
-    DEBUG.logger('Handler:', handler.toString())
+    logger('Handler:', handler.toString())
   }
 
   /**
@@ -47,8 +47,8 @@ export class ShutdownCleanup {
   static addSignal(signal: SignalsEvents): boolean {
     if (signals.has(signal)) return false
     signals.add(signal)
-    utils.attachListenerForEvent(signal)
-    DEBUG.logger('Added signal:', signal)
+    attachListenerForEvent(signal)
+    logger('Added signal:', signal)
     return true
   }
 
@@ -62,8 +62,8 @@ export class ShutdownCleanup {
    */
   static removeSignal(signal: SignalsEvents): boolean {
     if (signals.delete(signal)) {
-      process.removeListener(signal, utils.shutdown)
-      DEBUG.logger('Removed signal:', signal)
+      process.removeListener(signal, shutdown)
+      logger('Removed signal:', signal)
       return true
     }
     return false

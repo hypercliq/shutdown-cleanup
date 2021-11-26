@@ -6,9 +6,11 @@ import { SignalsEvents } from './signal'
  * @export
  * @interface HandlerFunction
  */
-
 export interface HandlerFunction {
   (signal?: SignalsEvents | Error): unknown
 }
 
+/**
+ * This array contains all the handler functions that will be called upon catching a signal.
+ */
 export const handlers: HandlerFunction[] = []
