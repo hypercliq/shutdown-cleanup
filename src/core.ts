@@ -1,4 +1,4 @@
-import * as os from 'os'
+import { constants } from 'os'
 import { handlers } from './handler'
 import { logger } from './logger'
 import { signals, SignalsEvents } from './signal'
@@ -24,7 +24,7 @@ export const shutdown = async (
       ? signal
       : signal instanceof Error
       ? (signal as NodeJS.ErrnoException).errno
-      : os.constants.signals[signal as NodeJS.Signals]
+      : constants.signals[signal as NodeJS.Signals]
 
   logger('Shutdown exitCode:', exitCode)
 

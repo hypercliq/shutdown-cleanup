@@ -9,13 +9,12 @@ program
   .option('-q, --quit')
   .option('-x, --uncaught-exception')
   .option('-y, --unhandled-rejection')
-  .option('--debug <name>')
 
 program.parse(process.argv)
 
 const opts = program.opts()
 
-function lookBusy() {
+const lookBusy = () => {
   let current = 0
   const timerId = setInterval(() => {
     if (current === 3) {
@@ -25,11 +24,11 @@ function lookBusy() {
   }, 100)
 }
 
+ShutdownCleanup.registerHandler(console.log)
+
 if (opts.addSignal) ShutdownCleanup.addSignal(opts.addSignal)
 
 if (opts.removeSignal) ShutdownCleanup.removeSignal(opts.removeSignal)
-
-ShutdownCleanup.registerHandler(console.log)
 
 lookBusy()
 
@@ -38,9 +37,8 @@ if (opts.uncaughtException) {
 }
 
 if (opts.unhandledRejection) {
-  const p = new Promise((resolve, reject) => {
-    if (false) resolve('never called :(')
-    else reject(new Error('boom'))
+  const p = new Promise((_, reject) => {
+    reject(new Error('boom'))
   })
 
   const badCall = async () => {
