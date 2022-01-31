@@ -60,7 +60,7 @@
     "jest": "^27.4.7",
     "lint-staged": "^12.1.2",
     "pinst": "^2.1.6",
-    "prettier": "^2.5.0",
+    "prettier": "^2.5.1",
     "rimraf": "^3.0.2",
     "standard-version": "^9.3.2",
     "tsd": "^0.19.0",
