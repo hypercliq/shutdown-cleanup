@@ -55,7 +55,7 @@
     "commander": "^9.0.0",
     "esbuild": "^0.14.24",
     "eslint": "^8.10.0",
-    "eslint-config-prettier": "^8.4.0",
+    "eslint-config-prettier": "^8.5.0",
     "husky": "^7.0.4",
     "jest": "^27.5.1",
     "lint-staged": "^12.3.4",
