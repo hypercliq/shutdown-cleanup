@@ -3,7 +3,7 @@ module.exports = {
     { type: 'feat', section: 'Features' },
     { type: 'fix', section: 'Fixes' },
     { type: 'chore', section: 'Chores', hidden: false },
-    { type: 'build', section: 'Build', hidden: false },
+    { type: 'build', section: 'Build', hidden: true },
     { type: 'ci', section: 'CI/CD', hidden: false },
     { type: 'docs', section: 'Documentation', hidden: false },
     { type: 'style', section: 'Style', hidden: false },
