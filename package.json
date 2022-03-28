@@ -68,6 +68,9 @@
     "tsd": "^0.19.1",
     "typescript": "^4.6.3"
   },
+  "peerDependencies": {
+    "@types/node": ">=12"
+  },
   "files": [
     "dist"
   ],
