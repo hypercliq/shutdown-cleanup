@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.1.2](https://github.com/hypercliq/shutdown-cleanup/compare/v4.1.1...v4.1.2) (2022-03-28)
+
+### Fixes
+
+- :bug: types definition 'not a module' error ([25704c9](https://github.com/hypercliq/shutdown-cleanup/commit/25704c935244d55268723c1994c0dcb2e716ba72))
+
 ### [4.1.1](https://github.com/hypercliq/shutdown-cleanup/compare/v4.1.0...v4.1.1) (2021-11-26)
 
 ### Fixes
