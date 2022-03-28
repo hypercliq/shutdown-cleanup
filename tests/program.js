@@ -1,5 +1,5 @@
 const program = require('commander')
-const { ShutdownCleanup } = require('../lib/index')
+const { ShutdownCleanup } = require('../dist/index')
 
 program
   .option('-k, --kill-signal <signal>')
