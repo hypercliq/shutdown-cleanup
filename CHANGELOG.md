@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.1.3](https://github.com/hypercliq/shutdown-cleanup/compare/v4.1.2...v4.1.3) (2022-03-28)
+
+### Fixes
+
+- add @types/node to peer deps ([536ab2a](https://github.com/hypercliq/shutdown-cleanup/commit/536ab2a762f5c8d55ffdef39cbc479ed94f89c18))
+
 ### [4.1.2](https://github.com/hypercliq/shutdown-cleanup/compare/v4.1.1...v4.1.2) (2022-03-28)
 
 ### Fixes
