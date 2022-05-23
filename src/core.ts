@@ -3,32 +3,32 @@ import { handlers } from './handler'
 import { logger } from './logger'
 import { signals, SignalsEvents } from './signal'
 
-let shuttingDown = false
-
-export const shutdown = async (
-  signal: SignalsEvents | Error
-): Promise<void> => {
-  if (shuttingDown) {
+export const shutdown = (signal: SignalsEvents | Error | number): void => {
+  if (signal === 0x99) {
+    logger('Shutdown already in progress')
     return
   }
-  shuttingDown = true
 
   logger('Shutting down on', signal)
 
-  await Promise.all(handlers.map((h) => h(signal)))
+  Promise.all(handlers.map((h) => h(signal)))
+    .then(() => {
+      logger('Shutdown completed')
 
-  logger('Shutdown completed')
+      const exitCode: number =
+        typeof signal === 'number'
+          ? signal
+          : (signal as NodeJS.ErrnoException)?.errno ??
+            constants.signals[signal as NodeJS.Signals]
 
-  const exitCode =
-    typeof signal === 'number'
-      ? signal
-      : signal instanceof Error
-      ? (signal as NodeJS.ErrnoException).errno
-      : constants.signals[signal as NodeJS.Signals]
+      logger('Shutdown exitCode:', exitCode)
 
-  logger('Shutdown exitCode:', exitCode)
-
-  process.exit(exitCode ?? 1)
+      process.exit(exitCode ?? 0x99)
+    })
+    .catch((err) => {
+      console.error('Error during shutdown:', err)
+      process.exit(0x99)
+    })
 }
 
 export const attachListenerForEvent = (event: SignalsEvents): NodeJS.Process =>

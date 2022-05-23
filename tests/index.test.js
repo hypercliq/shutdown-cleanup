@@ -70,13 +70,31 @@ describe('Core functionalities', () => {
     })
   })
 
-  test('exit', async () => {
+  test('exit on 1', async () => {
+    const args = ['-e', '1']
+
+    const [code, output] = await forkProcess(args)
+
+    expect(code).toBe(1)
+    expect(output).toMatch('1')
+  })
+
+  test('exit on 42', async () => {
     const args = ['-e', '42']
 
     const [code, output] = await forkProcess(args)
 
     expect(code).toBe(42)
-    expect(output).toMatchSnapshot()
+    expect(output).toMatch('42')
+  })
+
+  test('exit on 0x99, no output because this is the special signal', async () => {
+    const args = ['-e', '0x99']
+
+    const [code, output] = await forkProcess(args)
+
+    expect(code).toBe(0x99)
+    expect(output).toMatch('')
   })
 
   test('quit', async () => {
@@ -88,13 +106,13 @@ describe('Core functionalities', () => {
     expect(output).toMatchSnapshot()
   })
 
-  test('Remove exit', async () => {
+  test('Removing exit causes custom process.exit(#) to stop working, of course', async () => {
     const args = ['-e', '42', '-r', 'exit']
 
-    const [code, output] = await forkProcess(args)
+    const [code, output] = await forkProcess(args, 'shutdown-cleanup')
 
     expect(code).toBe(42)
-    expect(output).toMatchSnapshot()
+    expect(output).toMatch('')
   })
 
   test('uncaughtException not added', async () => {
@@ -111,11 +129,11 @@ describe('Core functionalities', () => {
 
     const [code, output] = await forkProcess(args)
 
-    expect(code).toBe(1)
+    expect(code).toBe(0x99)
     expect(output).toMatch(/^ReferenceError: foo is not defined/)
   })
 
-  test('unhandledRejection not added', async () => {
+  test.only('unhandledRejection not added', async () => {
     const args = ['--unhandled-rejection']
 
     const [code, output] = await forkProcess(args)
@@ -128,7 +146,9 @@ describe('Core functionalities', () => {
     const exit_code = nodejs_version <= 14 ? 0 : 1
     expect(code).toBe(exit_code)
     const error_msg =
-      nodejs_version <= 14 ? 'UnhandledPromiseRejectionWarning' : 'Error: boom'
+      nodejs_version <= 14
+        ? 'UnhandledPromiseRejectionWarning'
+        : 'Error: unhandled rejection'
     expect(output).toMatch(error_msg)
   })
 
@@ -137,8 +157,8 @@ describe('Core functionalities', () => {
 
     const [code, output] = await forkProcess(args)
 
-    expect(code).toBe(1)
-    expect(output).toMatch(/^Error: boom/)
+    expect(code).toBe(0x99)
+    expect(output).toMatch(/^Error: unhandled rejection/)
   })
 })
 
