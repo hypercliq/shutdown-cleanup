@@ -7,7 +7,7 @@ import { SignalsEvents } from './signal'
  * @interface HandlerFunction
  */
 export interface HandlerFunction {
-  (signal?: SignalsEvents | Error): unknown
+  (signal?: SignalsEvents | Error | number): unknown
 }
 
 /**

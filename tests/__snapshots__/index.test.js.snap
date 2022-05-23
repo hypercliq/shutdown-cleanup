@@ -1,29 +1,26 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Core functionalities Remove exit 1`] = `""`;
-
-exports[`Core functionalities exit 1`] = `
-"42
-"
-`;
-
 exports[`Core functionalities not windows machines SIGABRT 1`] = `
 "SIGABRT
+6
 "
 `;
 
 exports[`Core functionalities not windows machines SIGHUP 1`] = `
 "SIGHUP
+1
 "
 `;
 
 exports[`Core functionalities not windows machines SIGINT 1`] = `
 "SIGINT
+2
 "
 `;
 
 exports[`Core functionalities not windows machines SIGTERM 1`] = `
 "SIGTERM
+15
 "
 `;
 

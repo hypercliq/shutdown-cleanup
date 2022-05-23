@@ -1,5 +1,5 @@
 const program = require('commander')
-const { ShutdownCleanup } = require('../dist/index')
+const shutdownCleanup = require('../dist/index')
 
 program
   .option('-k, --kill-signal <signal>')
@@ -24,11 +24,11 @@ const lookBusy = () => {
   }, 100)
 }
 
-ShutdownCleanup.registerHandler(console.log)
+shutdownCleanup.registerHandler(console.log)
 
-if (opts.addSignal) ShutdownCleanup.addSignal(opts.addSignal)
+if (opts.addSignal) shutdownCleanup.addSignal(opts.addSignal)
 
-if (opts.removeSignal) ShutdownCleanup.removeSignal(opts.removeSignal)
+if (opts.removeSignal) shutdownCleanup.removeSignal(opts.removeSignal)
 
 lookBusy()
 
@@ -37,9 +37,7 @@ if (opts.uncaughtException) {
 }
 
 if (opts.unhandledRejection) {
-  const p = new Promise((_, reject) => {
-    reject(new Error('boom'))
-  })
+  const p = Promise.reject(new Error('unhandled rejection'))
 
   const badCall = async () => {
     await p

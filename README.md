@@ -47,12 +47,13 @@ It is also possible to add (or remove) other shutdown signals/events.
 
 Tested in [nodejs](https://nodejs.org) version:
 
-- 12
 - 14
 - 16 (see [Exit codes](#exit-codes))
-- 17
+- 18
 
 **Version `4.0.0` drops compatibility with node <= 10.**
+
+**Version `5.0.0` drops compatibility with node <= 12.**
 
 ## Install
 
@@ -65,28 +66,32 @@ npm i -S @hypercliq/shutdown-cleanup
 ### Register a handler
 
 ```js
-import { ShutdownCleanup } from 'shutdown-cleanup'
-// const ShutdownCleanup = require('shutdown-cleanup').ShutdownCleanup
+import {
+  registerHandler,
+  addSignal,
+  removeSignal,
+  listSignals,
+} from 'shutdown-cleanup'
 
-ShutdownCleanup.registerHandler(() => console.log('This is printed on exit :)'))
+registerHandler(() => console.log('This is printed on exit :)'))
 ```
 
 ### Add a signal or event to listen to
 
 ```js
-ShutdownCleanup.addSignal('uncaughtException')
+addSignal('uncaughtException')
 ```
 
 ### Remove a signal or an event
 
 ```js
-ShutdownCleanup.removeSignal('SIGHUP')
+removeSignal('SIGHUP')
 ```
 
 ### List signals and events listened to
 
 ```js
-ShutdownCleanup.listSignals()
+listSignals()
 ```
 
 ## TypeScript
@@ -100,12 +105,10 @@ It is possible to listen to the `uncaughtException` event, but **_no_** error me
 ### Handle parameter
 
 ```js
-ShutdownCleanup.registerHandler((codeOrError) =>
-  console.log('This what we got back:', codeOrError)
-)
+registerHandler((signal) => console.log('This is what we got back:', signal))
 ```
 
-By accepting a parameter (in this case `codeOrError`) we can get back from the module either a code/signal or an error.
+The handler function accepts an optional parameter `signal` that can be either a number, an Error or an exit signal.
 
 ### Debug
 
