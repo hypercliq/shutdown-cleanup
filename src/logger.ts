@@ -10,6 +10,6 @@ const enabled = DEBUG && /(?:shutdown-cleanup|^\*$)/.test(DEBUG)
  *
  * @param message the debug message to show
  */
-export const logger = (...message: unknown[]): void => {
+export const logger = (...message: readonly unknown[]): void => {
   if (enabled) console.debug('🐞shutdown-cleanup', ...message)
 }

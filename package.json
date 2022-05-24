@@ -7,13 +7,14 @@
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "engines": {
-    "node": ">=12"
+    "node": ">=14"
   },
   "scripts": {
     "clean": "rimraf dist",
     "build": "parcel build --no-source-maps",
-    "pretest": "npm run lint",
+    "prebuild": "npm run check && npm run lint",
     "test": "tsd && jest",
+    "check": "tsc --noEmit",
     "posttest": "npm run format",
     "release": "standard-version",
     "format": "prettier --loglevel warn --write .",
@@ -48,28 +49,27 @@
   },
   "homepage": "https://github.com/hypercliq/shutdown-cleanup#readme",
   "devDependencies": {
-    "@commitlint/cli": "^16.2.4",
-    "@commitlint/config-conventional": "^16.2.4",
-    "@parcel/packager-ts": "^2.4.0",
-    "@parcel/transformer-typescript-types": "^2.4.0",
-    "@types/node": "^12.20.47",
+    "@commitlint/cli": "^17.0.0",
+    "@commitlint/config-conventional": "^17.0.0",
+    "@parcel/packager-ts": "^2.5.0",
+    "@parcel/transformer-typescript-types": "^2.5.0",
+    "@types/node": "^14.18.18",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",
     "commander": "^9.2.0",
-    "eslint": "^8.15.0",
+    "eslint": "^8.16.0",
     "eslint-config-prettier": "^8.5.0",
-    "husky": "^7.0.4",
-    "jest": "^27.5.1",
+    "husky": "^8.0.1",
+    "jest": "^28.1.0",
     "lint-staged": "^12.4.1",
-    "parcel": "^2.4.0",
+    "parcel": "^2.5.0",
     "prettier": "^2.6.2",
     "rimraf": "^3.0.2",
-    "standard-version": "^9.5.0",
     "tsd": "^0.20.0",
     "typescript": "^4.6.4"
   },
   "peerDependencies": {
-    "@types/node": ">=12"
+    "@types/node": ">=14"
   },
   "files": [
     "dist"

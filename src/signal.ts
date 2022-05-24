@@ -27,4 +27,4 @@ export const signals: Set<SignalsEvents> = new Set([
   'SIGHUP',
   'SIGINT',
   'exit',
-])
+] as SignalsEvents[])

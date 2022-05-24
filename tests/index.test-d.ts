@@ -1,18 +1,22 @@
 import { expectError, expectType } from 'tsd'
-import { HandlerFunction } from '../src/handler'
-import { ShutdownCleanup } from '../src/index'
-import { SignalsEvents } from '../src/signal'
+import {
+  addSignal,
+  HandlerFunction,
+  registerHandler,
+  removeSignal,
+  SignalsEvents,
+} from '../dist'
 
-const handler: HandlerFunction = (signal?: SignalsEvents | Error) => {}
-expectType<void>(ShutdownCleanup.registerHandler(handler))
+const handler: HandlerFunction = (signal?: SignalsEvents | Error | number) => {}
+expectType<void>(registerHandler(handler))
 
 const wrongHandler = (wrongSignal: boolean) => {}
-expectError(ShutdownCleanup.registerHandler(wrongHandler))
+expectError(registerHandler(wrongHandler))
 
-expectType<boolean>(ShutdownCleanup.addSignal('uncaughtException'))
+expectType<boolean>(addSignal('uncaughtException'))
 
-expectError(ShutdownCleanup.addSignal('myWrongSignal'))
+expectError(addSignal('myWrongSignal'))
 
-expectType<boolean>(ShutdownCleanup.removeSignal('uncaughtException'))
+expectType<boolean>(removeSignal('uncaughtException'))
 
-expectError(ShutdownCleanup.removeSignal('myWrongSignal'))
+expectError(removeSignal('myWrongSignal'))
