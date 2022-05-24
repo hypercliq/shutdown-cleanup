@@ -9,6 +9,7 @@ program
   .option('-q, --quit')
   .option('-x, --uncaught-exception')
   .option('-y, --unhandled-rejection')
+  .option('-f, --faulty-handler <problem>')
 
 program.parse(process.argv)
 
@@ -24,7 +25,40 @@ const lookBusy = () => {
   }, 100)
 }
 
+const unhandledRejection = () => {
+  const p = Promise.reject(new Error('unhandled rejection'))
+
+  const badCall = async () => {
+    await p
+  }
+
+  badCall()
+}
+
 shutdownCleanup.registerHandler(console.log)
+
+if (opts.faultyHandler) {
+  switch (opts.faultyHandler) {
+    case 'uncaughtException':
+      shutdownCleanup.registerHandler(() => {
+        x.boom
+      })
+      break
+    case 'unhandledRejection':
+      shutdownCleanup.registerHandler(() => {
+        unhandledRejection()
+      })
+
+      break
+    case 'throw':
+      shutdownCleanup.registerHandler(() => {
+        throw new Error('faulty handler')
+      })
+      break
+    default:
+      throw new Error(`Unknown faulty handler: ${opts.faultyHandler}`)
+  }
+}
 
 if (opts.addSignal) shutdownCleanup.addSignal(opts.addSignal)
 
@@ -37,13 +71,7 @@ if (opts.uncaughtException) {
 }
 
 if (opts.unhandledRejection) {
-  const p = Promise.reject(new Error('unhandled rejection'))
-
-  const badCall = async () => {
-    await p
-  }
-
-  badCall()
+  unhandledRejection()
 }
 
 if (opts.killSignal) {

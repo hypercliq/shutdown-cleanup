@@ -3,28 +3,33 @@ import { handlers } from './handler'
 import { logger } from './logger'
 import { signals, SignalsEvents } from './signal'
 
-export const shutdown = (signal: SignalsEvents | Error | number): void => {
-  if (signal === 0x99) {
+const DEFAULT_EXIT_CODE = 0x99
+
+export const shutdown = async (
+  signal: SignalsEvents | NodeJS.ErrnoException | number
+): Promise<void> => {
+  if (signal === DEFAULT_EXIT_CODE) {
     logger('Shutdown already in progress')
     return
   }
 
   logger('Shutting down on', signal)
 
-  Promise.all(handlers.map((h) => h(signal)))
-    .then(() => {
-      logger('Shutdown completed')
+  for (const handler of handlers) {
+    try {
+      await handler(signal)
+    } catch (error) {
+      console.log('Error in shutdown handler', error)
+    }
+  }
 
-      const exitCode: number = getExitCode(signal)
+  logger('Shutdown completed')
 
-      logger('Shutdown exitCode:', exitCode)
+  const exitCode: number = getExitCode(signal)
 
-      process.exit(exitCode)
-    })
-    .catch((err) => {
-      console.error('Error during shutdown:', err)
-      process.exit(0x99)
-    })
+  logger('Shutdown exitCode:', exitCode)
+
+  process.exit(exitCode)
 }
 
 export const attachListenerForEvent = (event: SignalsEvents): NodeJS.Process =>
@@ -32,12 +37,21 @@ export const attachListenerForEvent = (event: SignalsEvents): NodeJS.Process =>
     .removeAllListeners(event)
     .addListener(event as NodeJS.Signals, shutdown)
 
-const getExitCode = (signal: SignalsEvents | Error | number): number => {
-  if (typeof signal === 'number') return signal
+const getExitCode = (
+  signal: SignalsEvents | NodeJS.ErrnoException | number
+): number => {
+  let code: number
 
-  if (signal instanceof Error) return (signal as NodeJS.ErrnoException).errno
+  if (typeof signal === 'number') {
+    code = signal
+  } else if (signal instanceof Error) {
+    code = signal.errno
+  } else {
+    code = constants.signals[signal]
+  }
 
-  return constants.signals[signal as NodeJS.Signals] ?? 0x99
+  return code ?? DEFAULT_EXIT_CODE
 }
 
+// attach shutdown listeners to all the signals
 signals.forEach(attachListenerForEvent)

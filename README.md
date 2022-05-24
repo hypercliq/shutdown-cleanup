@@ -31,15 +31,14 @@ It is also possible to add (or remove) other shutdown signals/events.
 - [Install](#install)
 - [Usage](#usage)
   - [Register a handler](#register-a-handler)
+    - [Handler function](#handler-function)
   - [Add a signal or event to listen to](#add-a-signal-or-event-to-listen-to)
   - [Remove a signal or an event](#remove-a-signal-or-an-event)
   - [List signals and events listened to](#list-signals-and-events-listened-to)
 - [TypeScript](#typescript)
 - [Uncaught Exceptions & other similar events](#uncaught-exceptions--other-similar-events)
-  - [Handle parameter](#handle-parameter)
   - [Debug](#debug)
 - [Exit codes](#exit-codes)
-- [Changelog](#changelog)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -76,6 +75,20 @@ import {
 registerHandler(() => console.log('This is printed on exit :)'))
 ```
 
+#### Handler function
+
+```js
+type HandlerFunction = (
+  signal?: SignalsEvents | Error | number
+) => void | Promise<void>
+```
+
+The optional parameter `signal` will be set to what caused the program to exit (see [exit codes](#exit-codes)).
+
+```js
+registerHandler((signal) => console.log('This is what we got back:', signal))
+```
+
 ### Add a signal or event to listen to
 
 ```js
@@ -101,14 +114,6 @@ TypeScript types are included.
 ## Uncaught Exceptions & other similar events
 
 It is possible to listen to the `uncaughtException` event, but **_no_** error message will be displayed if the handle function does not explicitly ask for it or we don't enable `debug` (this is also true for other events such as `unhandledRejection`.)
-
-### Handle parameter
-
-```js
-registerHandler((signal) => console.log('This is what we got back:', signal))
-```
-
-The handler function accepts an optional parameter `signal` that can be either a number, an Error or an exit signal.
 
 ### Debug
 
@@ -137,17 +142,13 @@ In previous versions, `shutdown-cleanup` returned an exit code of `1` whenever a
 
 Now, `shutdown-cleanup` relays the code number associated with the signal that caused `node` to terminate.
 
-In some cases (when signal is an `Error`), the code number (`errno`) might be `undefined`. In those cases, `shutdown-cleanup` sets the exit code to 1.
+In some cases (e.g. when signal is an `Error`), the code number (`errno`) might be `undefined`. In those cases, `shutdown-cleanup` sets the exit code to `0x99`
 
 For node versions \*less than **v15\***, `shutdown-cleanup` reports `unhandledRejection` exit code as `0`. This is in line with what node is actually returning. In fact, `unhandledRejection` produces this deprecation warning:
 
 ```sh
 DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code.
 ```
-
-## Changelog
-
-see [CHANGELOG](CHANGELOG.md)
 
 ## Contributing
 
