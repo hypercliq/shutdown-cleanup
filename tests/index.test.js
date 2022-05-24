@@ -4,6 +4,8 @@ const os = require('os')
 
 const programFile = path.resolve(__dirname, './program.js')
 
+const showOutput = !!process.env.SHOW_OUTPUT
+
 const forkProcess = (args, debug) => {
   return new Promise((resolve) => {
     const proc = fork(programFile, args, {
@@ -22,6 +24,8 @@ const forkProcess = (args, debug) => {
     })
 
     proc.on('exit', (code) => {
+      if (showOutput) console.log('code', code, 'output', output)
+
       resolve([code, output])
     })
   })
@@ -133,7 +137,7 @@ describe('Core functionalities', () => {
     expect(output).toMatch(/^ReferenceError: foo is not defined/)
   })
 
-  test.only('unhandledRejection not added', async () => {
+  test('unhandledRejection not added', async () => {
     const args = ['--unhandled-rejection']
 
     const [code, output] = await forkProcess(args)
@@ -206,5 +210,37 @@ describe('Switch on/off debugging', () => {
 
     expect(code).toBe(0)
     expect(output).toMatchSnapshot()
+  })
+})
+
+describe('Faulty handlers', () => {
+  test('throw in handler', async () => {
+    const args = ['-f', 'throw']
+
+    const [code, output] = await forkProcess(args)
+
+    expect(code).toBe(0)
+    expect(output).toMatch(/Error in shutdown handler Error: faulty handler/)
+  })
+
+  test('uncaughtException in handler', async () => {
+    const args = ['-f', 'uncaughtException']
+
+    const [code, output] = await forkProcess(args)
+
+    expect(code).toBe(0)
+    expect(output).toMatch(
+      /Error in shutdown handler ReferenceError: x is not defined/
+    )
+  })
+
+  test('unhandledRejection in handler', async () => {
+    const args = ['-f', 'unhandledRejection']
+
+    const [code, output] = await forkProcess(args)
+
+    expect(code).toBe(0)
+    // cannot catch unhandled rekection in handlers... no waiting for async
+    expect(output).toMatch('0')
   })
 })
