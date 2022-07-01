@@ -55,7 +55,7 @@
     "@parcel/transformer-typescript-types": "^2.5.0",
     "@types/node": "^14.18.18",
     "@typescript-eslint/eslint-plugin": "^5.30.0",
-    "@typescript-eslint/parser": "^5.30.0",
+    "@typescript-eslint/parser": "^5.30.3",
     "commander": "^9.3.0",
     "eslint": "^8.18.0",
     "eslint-config-prettier": "^8.5.0",
