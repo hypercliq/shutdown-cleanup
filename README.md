@@ -4,7 +4,6 @@
 ![npm downloads](https://badgen.net/npm/dt/@hypercliq/shutdown-cleanup)
 ![types](https://badgen.net/npm/types/@hypercliq/shutdown-cleanup)
 ![Dependabot](https://badgen.net/github/dependabot/hypercliq/shutdown-cleanup?icon=dependabot)
-[![BCH compliance](https://bettercodehub.com/edge/badge/hypercliq/shutdown-cleanup?branch=main)](https://bettercodehub.com/)
 [![Node.js CI](https://github.com/hypercliq/shutdown-cleanup/workflows/Node.js%20CI/badge.svg)](https://github.com/hypercliq/shutdown-cleanup/)
 ![CodeQL](https://github.com/hypercliq/shutdown-cleanup/workflows/CodeQL/badge.svg)
 
