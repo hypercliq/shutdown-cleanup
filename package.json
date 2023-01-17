@@ -51,7 +51,7 @@
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",
     "@commitlint/config-conventional": "^17.4.2",
-    "@parcel/packager-ts": "^2.5.0",
+    "@parcel/packager-ts": "^2.8.2",
     "@parcel/transformer-typescript-types": "^2.5.0",
     "@types/node": "^14.18.18",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
