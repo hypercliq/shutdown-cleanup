@@ -52,7 +52,7 @@
     "@commitlint/cli": "^17.6.3",
     "@commitlint/config-conventional": "^17.6.3",
     "@parcel/packager-ts": "^2.5.0",
-    "@parcel/transformer-typescript-types": "^2.5.0",
+    "@parcel/transformer-typescript-types": "^2.9.0",
     "@types/node": "^14.18.18",
     "@typescript-eslint/eslint-plugin": "^5.59.7",
     "@typescript-eslint/parser": "^5.59.7",
