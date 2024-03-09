@@ -1,246 +1,279 @@
-const { fork } = require('child_process')
-const path = require('path')
-const os = require('os')
+import { assert, expect } from 'chai'
+import { spawn } from 'node:child_process'
+import path from 'node:path'
+import url from 'node:url'
+import {
+  addSignal,
+  listHandlers,
+  listSignals,
+  registerHandler,
+  registerSignalHandler,
+  removeHandler,
+  removeSignal,
+  removeSignalHandler,
+} from '../src/index.js'
 
-const programFile = path.resolve(__dirname, './program.js')
+import * as os from 'node:os'
 
-const showOutput = !!process.env.SHOW_OUTPUT
+let testScriptPath
 
-const forkProcess = (args, debug) => {
-  return new Promise((resolve) => {
-    const proc = fork(programFile, args, {
-      silent: true,
-      env: { DEBUG: debug },
-    })
+const defaultSignals = ['SIGINT', 'SIGTERM', 'SIGHUP', 'exit']
 
-    let output = ''
+// list every signal that is available on the current platform
+const nodejsSignals = Object.keys(process.binding('constants').os.signals)
 
-    proc.stdout.on('data', (data) => {
-      output += data.toString()
-    })
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
+testScriptPath = path.join(__dirname, 'test-script.js')
 
-    proc.stderr.on('data', (data) => {
-      output += data.toString()
-    })
+function spawnChildAndSetupListeners(
+  arguments_,
+  done,
+  stdoutExpectation,
+  stderrExpectation,
+  exitCodeExpectation,
+  debug = false,
+) {
+  const child = spawn(
+    'node',
+    [testScriptPath, ...arguments_],
+    debug
+      ? {
+          env: {
+            ...process.env,
+            DEBUG: 'shutdown-cleanup',
+          },
+        }
+      : {},
+  )
 
-    proc.on('exit', (code) => {
-      if (showOutput) console.log('code', code, 'output', output)
+  child.stdout.on('data', (data) => {
+    debug ? console.log(data.toString()) : stdoutExpectation(data)
+  })
 
-      resolve([code, output])
-    })
+  child.stderr.on('data', (data) => {
+    debug ? console.error(data.toString()) : stderrExpectation(data)
+  })
+
+  child.on('error', (error) => {
+    assert.fail(error)
+  })
+
+  child.on('exit', (code, signal) => {
+    expect(code).to.equal(exitCodeExpectation)
+    // eslint-disable-next-line unicorn/no-null
+    expect(signal).to.equal(null)
+    done()
   })
 }
 
-describe('Core functionalities', () => {
-  /**
-   * process.kill on win32 is dodgy at best.
-   */
-  describe('not windows machines', () => {
-    if (os.platform() === 'win32') return
-    test('SIGINT', async () => {
-      const args = ['-k', 'SIGINT']
+describe('Shutdown-cleanup module', function () {
+  describe('Default signals', function () {
+    // eslint-disable-next-line mocha/no-setup-in-describe
+    for (const testSignal of defaultSignals) {
+      it(`should handle default signal ${testSignal} correctly`, function (done) {
+        spawnChildAndSetupListeners(
+          ['--default', testSignal],
+          done,
+          (data) => assert.fail('Should not have received any output: ' + data),
+          (data) =>
+            expect(data.toString().trim()).to.equal(
+              `Handled default signal: ${testSignal}`,
+            ),
+          testSignal === 'exit' ? 0 : os.constants.signals[testSignal],
+        )
+      })
+    }
+  })
 
-      const [code, output] = await forkProcess(args)
-
-      expect(code).toBe(os.constants.signals.SIGINT)
-      expect(output).toMatchSnapshot()
+  describe('Node lifecycle events', function () {
+    it('should handle unhandledRejection correctly', function (done) {
+      spawnChildAndSetupListeners(
+        ['-l', 'unhandled'],
+        done,
+        (data) => assert.fail('Should not have received any output: ' + data),
+        (data) =>
+          expect(data.toString().trim()).to.equal(
+            'Handler for unhandledRejection: Error: Unhandled rejection',
+          ),
+        1,
+      )
     })
 
-    test('SIGTERM', async () => {
-      const args = ['-k', 'SIGTERM']
-
-      const [code, output] = await forkProcess(args)
-
-      expect(code).toBe(os.constants.signals.SIGTERM)
-      expect(output).toMatchSnapshot()
+    it('should handle beforeExit correctly', function (done) {
+      spawnChildAndSetupListeners(
+        ['-l', 'beforeExit'],
+        done,
+        (data) =>
+          expect(data.toString().trim()).to.equal('Handler for beforeExit: 0'),
+        (data) => assert.fail('Should not have received any error: ' + data),
+        0,
+      )
     })
 
-    test('SIGHUP', async () => {
-      const args = ['-k', 'SIGHUP']
-
-      const [code, output] = await forkProcess(args)
-
-      expect(code).toBe(os.constants.signals.SIGHUP)
-      expect(output).toMatchSnapshot()
-    })
-
-    test('SIGABRT', async () => {
-      const args = ['-a', 'SIGABRT', '-k', 'SIGABRT']
-
-      const [code, output] = await forkProcess(args)
-
-      expect(code).toBe(os.constants.signals.SIGABRT)
-      expect(output).toMatchSnapshot()
+    it('should handle uncaughtException correctly', function (done) {
+      spawnChildAndSetupListeners(
+        ['-l', 'uncaught'],
+        done,
+        (data) => assert.fail('Should not have received any output: ' + data),
+        (data) =>
+          expect(data.toString().trim()).to.equal(
+            'Handler for uncaughtException: Error: Uncaught exception',
+          ),
+        1,
+      )
     })
   })
 
-  test('exit on 1', async () => {
-    const args = ['-e', '1']
+  describe('Signals and handlers', function () {
+    it('should add and remove a signal', function () {
+      const signal = 'SIGUSR2'
+      const addResult = addSignal(signal)
+      expect(addResult).to.be.true
+      expect(listSignals()).to.include(signal)
+      const removeResult = removeSignal(signal)
+      expect(removeResult).to.be.true
+      expect(listSignals()).to.not.include(signal)
+    })
 
-    const [code, output] = await forkProcess(args)
+    it('should add and remove a signal handler', function () {
+      const signal = 'SIGUSR2'
+      // eslint-disable-next-line unicorn/consistent-function-scoping
+      const handler = (signal) => console.log(`Handled signal: ${signal}`)
+      registerSignalHandler(signal, handler, true)
+      const handlers = listHandlers()
+      expect(handlers).to.include(handler)
+      const removeResult = removeSignalHandler(signal)
+      expect(removeResult).to.be.true
+      expect(listHandlers()).to.not.include(handler)
+    })
 
-    expect(code).toBe(1)
-    expect(output).toMatch('1')
+    it('should register, list and remove a generic handler', function () {
+      // eslint-disable-next-line unicorn/consistent-function-scoping
+      const handler = (signal) => console.log(`Handled signal: ${signal}`)
+      const identifier = 'test'
+      registerHandler(handler, identifier)
+      const handlers = listHandlers()
+      expect(handlers['1']).to.have.property(identifier) // Check if the '1' phase includes the identifier
+      const removed = removeHandler(identifier)
+      expect(removed).to.be.true
+      expect(listHandlers()['1']).to.not.have.property(identifier) // Check if the '1' phase does not include the identifier after removal
+    })
   })
 
-  test('exit on 42', async () => {
-    const args = ['-e', '42']
-
-    const [code, output] = await forkProcess(args)
-
-    expect(code).toBe(42)
-    expect(output).toMatch('42')
+  describe('POSIX signal handling', function () {
+    // eslint-disable-next-line mocha/no-setup-in-describe
+    for (const testSignal of nodejsSignals) {
+      it(`should handle POSIX signal ${testSignal} correctly`, function (done) {
+        spawnChildAndSetupListeners(
+          ['-s', testSignal],
+          done,
+          (data) => assert.fail('Should not have received any output: ' + data),
+          (data) =>
+            expect(data.toString().trim()).to.equal(
+              `Handled signal: ${testSignal}`,
+            ),
+          testSignal === 'SIGSTOP' || testSignal === 'SIGKILL'
+            ? 1
+            : os.constants.signals[testSignal],
+        )
+      })
+    }
   })
 
-  test('exit on 0x99, no output because this is the special signal', async () => {
-    const args = ['-e', '0x99']
+  describe('Error handling strategy', function () {
+    it('should error on invalid strategy', function (done) {
+      spawnChildAndSetupListeners(
+        ['-e', 'invalid'],
+        done,
+        (data) => assert.fail('Should not have received any output: ' + data),
+        (data) => assert.fail('Should not have received any error: ' + data),
+        1,
+      )
+    })
 
-    const [code, output] = await forkProcess(args)
+    it('should handle continue strategy correctly', function (done) {
+      spawnChildAndSetupListeners(
+        ['-e', 'continue'],
+        done,
+        (data) =>
+          expect(data.toString().trim()).to.equal('Handler for succeed'),
+        (data) =>
+          expect(data.toString().trim())
+            .to.be.a('string')
+            .and.satisfy((string_) =>
+              string_.startsWith("Error in shutdown handler 'failingHandler"),
+            ),
+        0,
+      )
+    })
 
-    expect(code).toBe(0x99)
-    expect(output).toMatch('')
+    it('should handle stop strategy correctly', function (done) {
+      const stderrOutput = []
+      spawnChildAndSetupListeners(
+        ['-e', 'stop'],
+        done,
+        (data) => assert.fail('Should not have received any output: ' + data),
+        (data) => stderrOutput.push(data.toString().trim()),
+        1,
+      )
+    })
   })
 
-  test('quit', async () => {
-    const args = ['-q']
-
-    const [code, output] = await forkProcess(args)
-
-    expect(code).toBe(0)
-    expect(output).toMatchSnapshot()
+  describe('Custom exit code', function () {
+    it('should set a custom exit code', function (done) {
+      spawnChildAndSetupListeners(
+        ['-x', '42'],
+        done,
+        (data) => expect(data.toString().trim()).to.equal('Handler for exit'),
+        (data) => assert.fail('Should not have received any output: ' + data),
+        42,
+      )
+    })
   })
 
-  test('Removing exit causes custom process.exit(#) to stop working, of course', async () => {
-    const args = ['-e', '42', '-r', 'exit']
-
-    const [code, output] = await forkProcess(args, 'shutdown-cleanup')
-
-    expect(code).toBe(42)
-    expect(output).toMatch('')
+  describe('Shutdown timeout', function () {
+    it('should set a custom shutdown timeout', function (done) {
+      spawnChildAndSetupListeners(
+        ['-t', '100'],
+        done,
+        (data) => assert.fail('Should not have received any output: ' + data),
+        (data) =>
+          expect(data.toString().trim()).to.equal(
+            'Shutdown process timed out. Forcing exit.',
+          ),
+        1,
+      )
+    })
   })
 
-  test('uncaughtException not added', async () => {
-    const args = ['--uncaught-exception']
-
-    const [code, output] = await forkProcess(args)
-
-    expect(code).toBe(1)
-    expect(output).toMatch('foo()')
+  describe('Handle custom events', function () {
+    it('should handle custom events correctly', function (done) {
+      spawnChildAndSetupListeners(
+        ['-c', 'customShutdownEvent', '100'],
+        done,
+        (data) => assert.fail('Should not have received any output: ' + data),
+        (data) =>
+          expect(data.toString().trim()).to.equal(
+            'Handled signal: customShutdownEvent',
+          ),
+        100,
+      )
+    })
   })
 
-  test('uncaughtException added', async () => {
-    const args = ['--uncaught-exception', '-a', 'uncaughtException']
-
-    const [code, output] = await forkProcess(args)
-
-    expect(code).toBe(0x99)
-    expect(output).toMatch(/^ReferenceError: foo is not defined/)
-  })
-
-  test('unhandledRejection not added', async () => {
-    const args = ['--unhandled-rejection']
-
-    const [code, output] = await forkProcess(args)
-
-    const nodejs_version = parseInt(
-      process.versions.node.split('.')[0].trim(),
-      10
-    )
-    // node v15 and above exits with a non-zero code for this
-    const exit_code = nodejs_version <= 14 ? 0 : 1
-    expect(code).toBe(exit_code)
-    const error_msg =
-      nodejs_version <= 14
-        ? 'UnhandledPromiseRejectionWarning'
-        : 'Error: unhandled rejection'
-    expect(output).toMatch(error_msg)
-  })
-
-  test('unhandledRejection added', async () => {
-    const args = ['--unhandled-rejection', '-a', 'unhandledRejection']
-
-    const [code, output] = await forkProcess(args)
-
-    expect(code).toBe(0x99)
-    expect(output).toMatch(/^Error: unhandled rejection/)
-  })
-})
-
-describe('Switch on/off debugging', () => {
-  test('process.env.DEBUG=shutdown-cleanup', async () => {
-    const args = ['-q']
-
-    const [code, output] = await forkProcess(args, 'shutdown-cleanup')
-
-    expect(code).toBe(0)
-    expect(output).toMatchSnapshot()
-  })
-
-  test('process.env.DEBUG=*', async () => {
-    const args = ['-q']
-
-    const [code, output] = await forkProcess(args, '*')
-
-    expect(code).toBe(0)
-    expect(output).toMatchSnapshot()
-  })
-
-  test('process.env.DEBUG=foo-bar shutdown-cleanup', async () => {
-    const args = ['-q']
-
-    const [code, output] = await forkProcess(args, 'foo-bar shutdown-cleanup')
-
-    expect(code).toBe(0)
-    expect(output).toMatchSnapshot()
-  })
-
-  test('process.env.DEBUG=foo-bar', async () => {
-    const args = ['-q']
-
-    const [code, output] = await forkProcess(args, 'foo-bar')
-
-    expect(code).toBe(0)
-    expect(output).toMatchSnapshot()
-  })
-
-  test('process.env.DEBUG=', async () => {
-    const args = ['-q']
-
-    const [code, output] = await forkProcess(args, '')
-
-    expect(code).toBe(0)
-    expect(output).toMatchSnapshot()
-  })
-})
-
-describe('Faulty handlers', () => {
-  test('throw in handler', async () => {
-    const args = ['-f', 'throw']
-
-    const [code, output] = await forkProcess(args)
-
-    expect(code).toBe(0)
-    expect(output).toMatch(/Error in shutdown handler Error: faulty handler/)
-  })
-
-  test('uncaughtException in handler', async () => {
-    const args = ['-f', 'uncaughtException']
-
-    const [code, output] = await forkProcess(args)
-
-    expect(code).toBe(0)
-    expect(output).toMatch(
-      /Error in shutdown handler ReferenceError: x is not defined/
-    )
-  })
-
-  test('unhandledRejection in handler', async () => {
-    const args = ['-f', 'unhandledRejection']
-
-    const [code, output] = await forkProcess(args)
-
-    expect(code).toBe(0)
-    // cannot catch unhandled rekection in handlers... no waiting for async
-    expect(output).toMatch('0')
+  describe('Handle multi-phase handlers', function () {
+    it('should handle multi-phase handlers correctly', function (done) {
+      const stderrOutput = []
+      spawnChildAndSetupListeners(
+        ['--multi-phase'],
+        done,
+        (data) =>
+          assert.fail(
+            'Should not have received any output: ' + data.toString(),
+          ),
+        (data) => stderrOutput.push(data.toString().trim()),
+        0,
+      )
+    })
   })
 })
