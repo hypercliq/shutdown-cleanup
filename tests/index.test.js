@@ -11,7 +11,7 @@ import {
   removeHandler,
   removeSignal,
   removeSignalHandler,
-} from '../src/index.js'
+} from '../index.js'
 
 import * as os from 'node:os'
 

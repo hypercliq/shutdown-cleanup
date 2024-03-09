@@ -4,8 +4,8 @@
   "description": "Module to handle graceful shutdowns",
   "type": "module",
   "exports": {
-    "types": "./src/index.d.ts",
-    "default": "./src/index.js"
+    "types": "./index.d.ts",
+    "default": "./index.js"
   },
   "engines": {
     "node": ">=18"
@@ -72,9 +72,6 @@
     "mocha": "^10.3.0",
     "prettier": "^3.2.5"
   },
-  "files": [
-    "src"
-  ],
   "mocha": {
     "spec": "tests/*.test.js"
   },

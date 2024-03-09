@@ -5,7 +5,7 @@ import {
   setCustomExitCode,
   setErrorHandlingStrategy,
   setShutdownTimeout,
-} from '../src/index.js'
+} from '../index.js'
 
 const arguments_ = process.argv.slice(2)
 const argument = arguments_[0]
