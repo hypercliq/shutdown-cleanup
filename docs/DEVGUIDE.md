@@ -1,4 +1,4 @@
-# ![Shutdown-Cleanup Module](logo.png) _Developer Guide_
+# _Developer Guide_
 
 This developer guide provides in-depth documentation on how to use the `shutdown-cleanup` module effectively in your Node.js applications, covering best practices, detailed examples, and advanced usage scenarios.
 
