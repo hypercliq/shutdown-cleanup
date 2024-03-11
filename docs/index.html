@@ -11,25 +11,73 @@
       .header {
         display: flex;
         align-items: center;
-        padding: 20px;
+        padding: 1rem;
         background-color: #f8f8f8;
         border-bottom: 1px solid #ddd;
       }
       .header img {
-        width: 50px;
-        height: 50px;
-        margin-right: 20px;
+        width: 64px;
+        height: 64px;
+        margin-right: 1rem;
       }
       .content {
-        padding: 20px;
+        padding: 1rem;
+      }
+      pre {
+        padding: none;
+        background-color: #333;
+        border-radius: 5px;
+        color: #ddd;
       }
     </style>
   </head>
   <body>
     <div class="header">
-      <img src="logo.png" alt="Logo" />
+      <img src="logo-io.png" alt="Logo" />
       <h1>Shutdown-Cleanup Module</h1>
     </div>
-    <div class="content">{% include_relative DEVGUIDE.md %}</div>
+    <div class="content">
+      <p>
+        The <strong>shutdown-cleanup</strong> module provides a structured
+        approach for managing graceful shutdowns in Node.js applications. It
+        supports phased shutdowns, signal-specific handlers, customizable error
+        handling strategies, and custom exit codes, ensuring broad compatibility
+        with LTS Node.js versions.
+      </p>
+      <p>
+        The module is designed to be easy to use and integrate with existing
+        applications. It is also fully customizable, allowing you to tailor the
+        shutdown process to your specific needs.
+      </p>
+      <h2>Features</h2>
+      <ul>
+        <li>Graceful shutdowns</li>
+        <li>Phased shutdowns</li>
+        <li>Signal-specific handlers</li>
+        <li>Customizable error handling strategies</li>
+        <li>Custom exit codes</li>
+        <li>Compatible with LTS Node.js versions</li>
+        <li>TypeScript types included</li>
+      </ul>
+      <h2>Installation</h2>
+      <p>You can install the module using npm or yarn:</p>
+      <pre>
+        <code>
+          $ npm install shutdown-cleanup
+          # or
+          $ yarn add shutdown-cleanup
+        </code>
+      </pre>
+      <h2>Usage</h2>
+      <p>
+        The module is easy to use and integrate with existing applications. It
+        provides a simple API for managing graceful shutdowns in Node.js
+        applications.
+      </p>
+      <p>
+        Please, refer to the <a href="DEVGUIDE">Developer Guide</a> for detailed
+        information on how to use the module.
+      </p>
+    </div>
   </body>
 </html>
