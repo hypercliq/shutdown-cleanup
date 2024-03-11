@@ -12,7 +12,7 @@ The `shutdown-cleanup` module provides a structured approach for managing gracef
 - **Signal-Specific Handlers:** Custom logic for specific signals without mandatory shutdown.
 - **Error Handling Strategy:** Customizable handling of handler errors.
 - **Custom Exit Codes:** Specify exit codes to indicate shutdown statuses.
-- **Graceful Shutdown with Timeout:** Prevents indefinite hangs during shutdown. (See [Developer Guide](docs/DEVGUIDE.md) for details.)
+- **Graceful Shutdown with Timeout:** Prevents indefinite hangs during shutdown. (See [Developer Guide](DEVGUIDE.md) for details.)
 - **LTS Node.js Support:** Compatible with LTS Node.js versions.
 - **Enhanced Flexibility:** Supports handling of custom application events.
 - **TypeScript Support:** Includes TypeScript definitions for ease of development.
@@ -44,7 +44,7 @@ registerHandler(async (signal) => {
 
 ## Examples and Best Practices
 
-For more detailed usage examples and best practices, see the [Developer Guide](docs/DEVGUIDE.md).
+For more detailed usage examples and best practices, see the [Developer Guide](DEVGUIDE.md).
 
 ## Contributing
 
