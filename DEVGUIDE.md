@@ -13,8 +13,8 @@ Customize this behavior as needed:
 Customize your application's response to system signals by adding or removing them:
 
 ```js
-addSignal('beforeExit')
-removeSignal('SIGHUP')
+addSignal("beforeExit");
+removeSignal("SIGHUP");
 ```
 
 ### Signal-Specific Handlers
@@ -23,12 +23,12 @@ Gain flexibility by registering handlers for specific signals or events, allowin
 
 ```js
 registerSignalHandler(
-  'SIGUSR1',
+  "SIGUSR1",
   async (signal) => {
-    console.log('Custom logic for SIGUSR1')
+    console.log("Custom logic for SIGUSR1");
   },
   false, // <= false indicates that the application should not terminate
-)
+);
 ```
 
 ## Handler Functions: Best Practices
@@ -41,9 +41,9 @@ Asynchronous handlers prevent delays in the shutdown process, especially benefic
 
 ```javascript
 registerHandler(async (signal) => {
-  await performComplexCleanup()
-  console.log('Cleanup completed')
-}, 'complexCleanup')
+  await performComplexCleanup();
+  console.log("Cleanup completed");
+}, "complexCleanup");
 ```
 
 ### Synchronous Handlers
@@ -52,9 +52,9 @@ While synchronous handlers are supported, use them cautiously for simple, quick 
 
 ```javascript
 registerHandler(() => {
-  performQuickCleanup()
-  console.log('Quick cleanup done')
-}, 'quickCleanup')
+  performQuickCleanup();
+  console.log("Quick cleanup done");
+}, "quickCleanup");
 ```
 
 ## Advanced Configuration
@@ -69,9 +69,9 @@ registerHandler(() => {
 A simple setup for managing a graceful shutdown:
 
 ```javascript
-import { registerHandler } from '@hypercliq/shutdown-cleanup'
+import { registerHandler } from "@hypercliq/shutdown-cleanup";
 
-registerHandler(async () => console.log('Cleanup resources'))
+registerHandler(async () => console.log("Cleanup resources"));
 ```
 
 ### Advanced Shutdown Sequence
@@ -87,47 +87,47 @@ import {
   registerSignalHandler,
   setErrorHandlingStrategy,
   setCustomExitCode,
-} from '@hypercliq/shutdown-cleanup'
+} from "@hypercliq/shutdown-cleanup";
 
 // Register a phased shutdown handler which will be executed in the default (first) phase
 registerHandler(
-  async () => console.log('Phase 1: Release resources'),
-  'releaseResources', // <= Specify a unique name for the handler
-)
+  async () => console.log("Phase 1: Release resources"),
+  "releaseResources", // <= Specify a unique name for the handler
+);
 
 // Register a phased shutdown handler which will be executed in the second phase
 registerHandler(
-  async () => console.log('Phase 2: Close connections'),
-  'closeConnections',
+  async () => console.log("Phase 2: Close connections"),
+  "closeConnections",
   2, // <= Specify the phase number
-)
+);
 
 // Add extra lifecycle event to listen to, phased shutdown handlers will be executed for this event!
-addSignal('beforeExit')
+addSignal("beforeExit");
 
 // Register a signal-specific handler for SIGUSR1
 registerSignalHandler(
-  'SIGUSR1',
+  "SIGUSR1",
   async (signal) => {
-    console.log(`Handling ${signal} for debugging purposes`)
+    console.log(`Handling ${signal} for debugging purposes`);
   },
   false, // <= false indicates that the application should not terminate
-)
+);
 
 // Register a signal-specific handler for a custom signal raised somewhere in the application
 registerSignalHandler(
-  'customSignal', // <= Custom signal or event name
+  "customSignal", // <= Custom signal or event name
   async (signal) => {
-    console.log(`Handling custom signal: ${signal}`)
+    console.log(`Handling custom signal: ${signal}`);
   },
   true, // <= true indicates that the application should terminate
-)
+);
 
 // Set the error handling strategy
-setErrorHandlingStrategy('continue')
+setErrorHandlingStrategy("continue");
 
 // Set a custom exit code
-setCustomExitCode(42)
+setCustomExitCode(42);
 ```
 
 ## API
@@ -139,7 +139,7 @@ This section provides a detailed overview of the functions available in the `shu
 Adds a new signal or event to the list of signals that will initiate the shutdown process.
 
 ```js
-addSignal('SIGUSR1')
+addSignal("SIGUSR1");
 ```
 
 ### `removeSignal(signal: string): boolean`
@@ -147,7 +147,7 @@ addSignal('SIGUSR1')
 Removes a signal from the list, preventing it from initiating the shutdown process if received.
 
 ```js
-removeSignal('SIGUSR1')
+removeSignal("SIGUSR1");
 ```
 
 ### `registerHandler(handler: (signal: string) => Promise<void>, identifier?: string, phase?: number): void`
@@ -157,11 +157,11 @@ Registers a shutdown handler that will be executed when the shutdown process beg
 ```js
 registerHandler(
   async (signal) => {
-    console.log(`Handling shutdown for signal: ${signal}`)
+    console.log(`Handling shutdown for signal: ${signal}`);
   },
-  'databaseCleanup',
+  "databaseCleanup",
   3, // <= Phase number, 1 is highest priority (default is 1)
-)
+);
 ```
 
 ### `removeHandler(identifier: string): boolean`
@@ -169,7 +169,7 @@ registerHandler(
 Removes a previously registered handler by its identifier.
 
 ```js
-removeHandler('databaseCleanup')
+removeHandler("databaseCleanup");
 ```
 
 ### `registerSignalHandler(signal: string, handler: (signal: string) => Promise<void>, shouldTerminate: boolean): void`
@@ -178,12 +178,12 @@ Registers a handler for a specific signal or event. This allows for custom logic
 
 ```js
 registerSignalHandler(
-  'SIGUSR1',
+  "SIGUSR1",
   async (signal) => {
-    console.log(`Custom logic for ${signal}`)
+    console.log(`Custom logic for ${signal}`);
   },
   false, // <= false indicates that the application should not terminate (default is true).
-)
+);
 ```
 
 ### `removeSignalHandler(signal: string): boolean`
@@ -191,7 +191,7 @@ registerSignalHandler(
 Removes a previously registered signal-specific handler.
 
 ```js
-removeSignalHandler('SIGUSR1')
+removeSignalHandler("SIGUSR1");
 ```
 
 ### `setErrorHandlingStrategy(strategy: 'continue' | 'stop'): void`
@@ -199,7 +199,7 @@ removeSignalHandler('SIGUSR1')
 Sets the global error handling strategy for the shutdown process. If an error occurs in a handler, choose between continuing with remaining handlers after the error (`'continue'`) or stopping the processing of handlers altogether (`'stop'`).
 
 ```js
-setErrorHandlingStrategy('continue')
+setErrorHandlingStrategy("continue");
 ```
 
 ### `setCustomExitCode(code: number): void`
@@ -207,7 +207,7 @@ setErrorHandlingStrategy('continue')
 Sets a custom exit code to be used when the application exits after the shutdown process is complete.
 
 ```js
-setCustomExitCode(42)
+setCustomExitCode(42);
 ```
 
 ### `listHandlers(): object`
@@ -215,8 +215,8 @@ setCustomExitCode(42)
 Returns a list of all registered handlers, including both phased and signal-specific handlers.
 
 ```js
-const allHandlers = listHandlers()
-console.log(allHandlers)
+const allHandlers = listHandlers();
+console.log(allHandlers);
 ```
 
 ### `listSignals(): string[]`
@@ -224,8 +224,8 @@ console.log(allHandlers)
 Provides a list of all signals and events that are currently being listened to by the module.
 
 ```js
-const signals = listSignals()
-console.log(signals)
+const signals = listSignals();
+console.log(signals);
 ```
 
 ### `setShutdownTimeout(timeout: number): void`
@@ -233,7 +233,7 @@ console.log(signals)
 Specifies a timeout for the shutdown process. If the shutdown does not complete within this timeframe, the process is forcibly terminated. But only for asynchronous handlers. A synchronous handler will block the shutdown process until it completes.
 
 ```js
-setShutdownTimeout(20000) // 20 seconds - default is 30 seconds
+setShutdownTimeout(20000); // 20 seconds - default is 30 seconds
 ```
 
 ## Contributing to Shutdown-Cleanup
