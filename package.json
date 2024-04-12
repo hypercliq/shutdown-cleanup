@@ -61,7 +61,7 @@
   "bugs": {
     "url": "https://github.com/hypercliq/shutdown-cleanup/issues"
   },
-  "homepage": "https://github.com/hypercliq/shutdown-cleanup#readme",
+  "homepage": "https://hypercliq.github.io/shutdown-cleanup",
   "devDependencies": {
     "@commitlint/cli": "^19.0.3",
     "@commitlint/config-conventional": "^19.0.3",
