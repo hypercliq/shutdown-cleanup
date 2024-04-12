@@ -34,12 +34,12 @@ yarn add @hypercliq/shutdown-cleanup
 To use `shutdown-cleanup`, import and utilize its functions within your application to manage shutdown logic effectively.
 
 ```js
-import { registerHandler } from '@hypercliq/shutdown-cleanup'
+import { registerHandler } from "@hypercliq/shutdown-cleanup";
 
 registerHandler(async (signal) => {
-  await performCleanup()
-  console.log('Cleanup completed')
-})
+  await performCleanup();
+  console.log("Cleanup completed");
+});
 ```
 
 ## Examples and Best Practices
