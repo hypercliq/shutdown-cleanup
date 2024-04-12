@@ -15,8 +15,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "xo --env=mocha --plugin=mocha && mocha",
-    "lint": "xo --env=mocha --plugin=mocha --fix",
+    "test": "xo && mocha",
+    "lint": "xo --fix",
     "prepare": "husky"
   },
   "repository": {
@@ -75,6 +75,14 @@
   },
   "mocha": {
     "spec": "tests/*.test.js"
+  },
+  "xo": {
+    "envs": [
+      "mocha"
+    ],
+    "plugins": [
+      "mocha"
+    ]
   },
   "packageManager": "npm@10.5.2+sha256.df0a1f7691654b94786013e5d5b80a873a7ffbae9c82c3bec8b5db76bc3b7dfd"
 }
