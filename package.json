@@ -63,7 +63,7 @@
   },
   "homepage": "https://hypercliq.github.io/shutdown-cleanup",
   "devDependencies": {
-    "@commitlint/cli": "^19.0.3",
+    "@commitlint/cli": "^19.2.1",
     "@commitlint/config-conventional": "^19.0.3",
     "@types/node": "^20.11.25",
     "chai": "^5.1.0",
