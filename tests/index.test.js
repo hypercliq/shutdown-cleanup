@@ -86,7 +86,7 @@ describe('Shutdown-cleanup module', () => {
 							`Handled default signal: ${testSignal}`,
 						),
 					exitCodeExpectation:
-						testSignal === 'exit' ? 0 : os.constants.signals[testSignal],
+            testSignal === 'exit' ? 0 : os.constants.signals[testSignal],
 				});
 			});
 		}
@@ -182,9 +182,7 @@ describe('Shutdown-cleanup module', () => {
 							`Handled signal: ${testSignal}`,
 						),
 					exitCodeExpectation:
-						testSignal === 'SIGSTOP' || testSignal === 'SIGKILL'
-							? 1
-							: os.constants.signals[testSignal],
+            testSignal === 'SIGSTOP' || testSignal === 'SIGKILL' ? 1 : os.constants.signals[testSignal],
 				});
 			});
 		}
