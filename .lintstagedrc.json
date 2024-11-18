@@ -1,4 +1,4 @@
 {
-  "*.{js,ts}": "xo --env=mocha --plugin=mocha --fix",
-  "*.{json,md,yml}": "prettier --write"
+  "*.{js,ts}": "eslint --fix",
+  "*": "prettier --write --ignore-unknown"
 }

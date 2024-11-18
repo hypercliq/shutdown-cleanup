@@ -1,13 +1,13 @@
-type Handler = (signal: string) => Promise<void> | void;
+type Handler = (signal: string) => Promise<void> | void
 
 type SignalHandler = {
-	handler: Handler;
-	shouldTerminate: boolean;
-	listener: () => void;
-};
+  handler: Handler
+  shouldTerminate: boolean
+  listener: () => void
+}
 
-type Handlers = Record<number, Record<string, Handler>>;
-type SignalHandlers = Record<string, SignalHandler>;
+type Handlers = Record<number, Record<string, Handler>>
+type SignalHandlers = Record<string, SignalHandler>
 
 /**
  * Adds a new signal to be listened for, initiating the shutdown process when received.
@@ -16,7 +16,7 @@ type SignalHandlers = Record<string, SignalHandler>;
  * @example
  * addSignal('SIGUSR2');
  */
-export function addSignal(signal: string): boolean;
+export function addSignal(signal: string): boolean
 
 /**
  * Lists all registered handlers, including both shutdown and signal-specific handlers.
@@ -24,7 +24,7 @@ export function addSignal(signal: string): boolean;
  * @example
  * const handlers = listHandlers();
  */
-export function listHandlers(): Handlers & SignalHandlers;
+export function listHandlers(): Handlers & SignalHandlers
 
 /**
  * Provides a list of all signals currently being listened to by the module.
@@ -32,7 +32,7 @@ export function listHandlers(): Handlers & SignalHandlers;
  * @example
  * const signals = listSignals();
  */
-export function listSignals(): string[];
+export function listSignals(): string[]
 
 /**
  * Registers a shutdown handler to be executed during the shutdown process.
@@ -44,10 +44,10 @@ export function listSignals(): string[];
  * registerHandler(async () => console.log('Cleanup tasks'), 'cleanupHandler', 2);
  */
 export function registerHandler(
-	handler: Handler,
-	identifier?: string,
-	phase?: number,
-): void;
+  handler: Handler,
+  identifier?: string,
+  phase?: number,
+): void
 
 /**
  * Registers a signal-specific handler that executes custom logic when the specified signal is received.
@@ -58,10 +58,10 @@ export function registerHandler(
  * registerSignalHandler('SIGUSR2', async () => console.log('Handling SIGUSR2'), false);
  */
 export function registerSignalHandler(
-	signal: string,
-	handler: Handler,
-	shouldTerminate?: boolean,
-): void;
+  signal: string,
+  handler: Handler,
+  shouldTerminate?: boolean,
+): void
 
 /**
  * Removes a previously registered shutdown handler by its identifier.
@@ -70,7 +70,7 @@ export function registerSignalHandler(
  * @example
  * removeHandler('cleanupHandler');
  */
-export function removeHandler(identifier: string): boolean;
+export function removeHandler(identifier: string): boolean
 
 /**
  * Removes a signal from the list that initiates the shutdown process.
@@ -79,7 +79,7 @@ export function removeHandler(identifier: string): boolean;
  * @example
  * removeSignal('SIGUSR2');
  */
-export function removeSignal(signal: string): boolean;
+export function removeSignal(signal: string): boolean
 
 /**
  * Removes a previously registered signal-specific handler.
@@ -88,7 +88,7 @@ export function removeSignal(signal: string): boolean;
  * @example
  * removeSignalHandler('SIGUSR2');
  */
-export function removeSignalHandler(signal: string): boolean;
+export function removeSignalHandler(signal: string): boolean
 
 /**
  * Sets a custom exit code for the shutdown process, overriding the default exit code.
@@ -96,7 +96,7 @@ export function removeSignalHandler(signal: string): boolean;
  * @example
  * setCustomExitCode(0);
  */
-export function setCustomExitCode(code: number): void;
+export function setCustomExitCode(code: number): void
 
 /**
  * Sets the global error handling strategy during the shutdown process.
@@ -104,7 +104,7 @@ export function setCustomExitCode(code: number): void;
  * @example
  * setErrorHandlingStrategy('continue');
  */
-export function setErrorHandlingStrategy(strategy: 'continue' | 'stop'): void;
+export function setErrorHandlingStrategy(strategy: 'continue' | 'stop'): void
 
 /**
  * Sets the timeout for the shutdown process. If the shutdown does not complete within this timeframe, the process is forcefully terminated.
@@ -112,4 +112,4 @@ export function setErrorHandlingStrategy(strategy: 'continue' | 'stop'): void;
  * @example
  * setShutdownTimeout(5000);
  */
-export function setShutdownTimeout(timeout: number): void;
+export function setShutdownTimeout(timeout: number): void
