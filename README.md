@@ -34,21 +34,36 @@ yarn add @hypercliq/shutdown-cleanup
 To use `shutdown-cleanup`, import and utilize its functions within your application to manage shutdown logic effectively.
 
 ```js
-import { registerHandler } from "@hypercliq/shutdown-cleanup";
+import { registerHandler } from '@hypercliq/shutdown-cleanup'
 
 registerHandler(async (signal) => {
-  await performCleanup();
-  console.log("Cleanup completed");
-});
+  await performCleanup()
+  console.log('Cleanup completed')
+})
 ```
 
 ## Examples and Best Practices
 
 For more detailed usage examples and best practices, see the [Developer Guide](DEVGUIDE.md).
 
-## Contributing
+## Contributing to Shutdown-Cleanup
 
-Contributions are welcome! Please submit issues and pull requests to propose changes, report bugs, or suggest new features. For major changes, open an issue first to discuss what you would like to change.
+We encourage contributions! If you have suggestions, bug reports, or would like to contribute code, please submit issues or pull requests on GitHub. For major changes, start by opening an issue to discuss your ideas.
+
+Thank you for using and contributing to the `shutdown-cleanup` module!
+
+### How to Contribute
+
+1. Fork the repository
+2. Create a new branch for your feature or bug fix
+3. Make your changes
+4. Commit your changes
+5. Push your changes to your fork
+6. Open a pull request
+7. Wait for review and merge
+8. Celebrate your contribution!
+
+Remember to add tests for your changes and ensure that all tests pass before submitting a pull request. Also lint and format your code according to the project's standards.
 
 ## License
 
