@@ -23,6 +23,8 @@ const nodejsSignals = Object.keys(os.constants.signals)
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 const testScriptPath = path.join(__dirname, 'test-script.js')
 
+const genericHandler = async () => {}
+
 const syncHandler = (signal) => {
   console.log(`Handled signal: ${signal}`)
 }
@@ -30,17 +32,6 @@ const syncHandler = (signal) => {
 const asyncHandler = async (signal) => {
   await new Promise((resolve) => setTimeout(resolve, 200))
   console.log(`Handled signal: ${signal}`)
-}
-
-const handleExpectations = (data) => {
-  expect(data.toString().trim()).to.equal('Handler for succeed')
-}
-
-const isValidString = (string_) =>
-  string_.startsWith("Error in shutdown handler 'failingHandler")
-
-const handleStderrExpectation = (data) => {
-  expect(data.toString().trim()).to.be.a('string').and.satisfy(isValidString)
 }
 
 function spawnChildAndSetupListeners({
@@ -123,6 +114,27 @@ describe('Shutdown-cleanup module', function () {
       expect(removed).to.equal(true)
       expect(listHandlers()['1']).to.not.have.property(identifier)
     })
+
+    it('should prevent registering handlers with duplicate identifiers', function () {
+      registerHandler(genericHandler, 'duplicateId', 1)
+
+      expect(listHandlers()['1']).to.have.property('duplicateId')
+
+      // Attempt to register a handler with the same identifier in the same phase
+      expect(() => registerHandler(genericHandler, 'duplicateId', 1)).to.throw(
+        Error,
+        "Handler with identifier 'duplicateId' already exists globally",
+      )
+
+      // Attempt to register a handler with the same identifier in different phase
+      expect(() => registerHandler(genericHandler, 'duplicateId', 2)).to.throw(
+        Error,
+        "Handler with identifier 'duplicateId' already exists globally",
+      )
+
+      // Cleanup
+      removeHandler('duplicateId')
+    })
   })
 
   describe('POSIX signal handling', function () {
@@ -198,12 +210,26 @@ describe('Shutdown-cleanup module', function () {
     it('should add and remove a signal handler', function () {
       const signal = 'SIGUSR2'
 
-      registerSignalHandler(signal, asyncHandler, true)
+      // Register the signal handler and capture the returned identifier
+      const identifier = registerSignalHandler(signal, asyncHandler, true)
+
+      // List all handlers
       const handlers = listHandlers()
+
+      // Ensure the signal is registered
       expect(handlers).to.have.property(signal)
-      expect(handlers[signal].handler).to.equal(asyncHandler)
-      const removeResult = removeSignalHandler(signal)
+
+      // Access the handler using the captured identifier
+      const signalHandlersMap = handlers[signal]
+      expect(signalHandlersMap).to.be.instanceOf(Map)
+      expect(signalHandlersMap.has(identifier)).to.be.true
+      expect(signalHandlersMap.get(identifier).handler).to.equal(asyncHandler)
+
+      // Remove the signal handler using the signal and identifier
+      const removeResult = removeSignalHandler(signal, identifier)
       expect(removeResult).to.equal(true)
+
+      // Ensure the signal is no longer registered if no other handlers exist
       expect(listHandlers()).to.not.have.property(signal)
     })
 
@@ -231,11 +257,19 @@ describe('Shutdown-cleanup module', function () {
       })
     })
 
-    it('should handle continue strategy correctly', function () {
+    it('should continue shutdown even if a handler fails when strategy is "continue"', function () {
       return spawnChildAndSetupListeners({
         arguments_: ['-e', 'continue'],
-        stdoutExpectation: handleExpectations,
-        stderrExpectation: handleStderrExpectation,
+        stdoutExpectation: (data) => {
+          expect(data.toString().trim()).to.equal('Handler for succeed')
+        },
+        stderrExpectation: (data) => {
+          expect(data.toString().trim())
+            .to.be.a('string')
+            .and.to.equal(
+              "Error in shutdown handler 'failingHandler' for phase '1': Error: Some error",
+            )
+        },
         exitCodeExpectation: 0,
       })
     })
