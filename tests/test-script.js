@@ -8,8 +8,7 @@ import {
   setShutdownTimeout,
 } from '../index.js'
 
-const arguments_ = process.argv.slice(2)
-const argument = arguments_[0]
+const [flag, ...rest] = process.argv.slice(2)
 
 const succeedingHandler = async () => {
   console.log('Handler for succeed')
@@ -19,10 +18,10 @@ const failingHandler = async () => {
   throw new Error('Some error')
 }
 
-switch (argument) {
+switch (flag) {
   case '--default': {
     {
-      const defaultSignal = arguments_[1]
+      const defaultSignal = rest[0]
       registerHandler(async () => {
         console.error(`Handled default signal: ${defaultSignal}`)
       })
@@ -35,7 +34,7 @@ switch (argument) {
 
   case '-s': {
     {
-      const signal = arguments_[1]
+      const signal = rest[0]
       registerSignalHandler(signal, async () => {
         console.error(`Handled signal: ${signal}`)
       })
@@ -48,7 +47,7 @@ switch (argument) {
 
   case '-l': {
     {
-      const event = arguments_[1]
+      const event = rest[0]
       await handleLifecycleEvent(event)
     }
 
@@ -57,7 +56,7 @@ switch (argument) {
 
   case '-e': {
     {
-      const strategy = arguments_[1]
+      const strategy = rest[0]
       setErrorHandlingStrategy(strategy)
 
       // Explicitly set the identifier for the failing handler
@@ -70,7 +69,7 @@ switch (argument) {
 
   case '-t': {
     {
-      const timeout = arguments_[1]
+      const timeout = rest[0]
       setShutdownTimeout(Number(timeout))
 
       // Register a handler that takes longer than the timeout
@@ -89,7 +88,7 @@ switch (argument) {
 
   case '-x': {
     {
-      const exitCode = arguments_[1]
+      const exitCode = rest[0]
       setCustomExitCode(Number(exitCode))
       registerHandler(async () => {
         console.log('Handler for exit')
@@ -101,8 +100,8 @@ switch (argument) {
 
   case '-c': {
     {
-      const customSignal = arguments_[1]
-      const customExitCode = arguments_[2]
+      const customSignal = rest[0]
+      const customExitCode = rest[1]
       setCustomExitCode(Number(customExitCode))
       registerSignalHandler(customSignal, async () => {
         console.error(`Handled signal: ${customSignal}`)
@@ -128,7 +127,7 @@ switch (argument) {
   }
 
   default: {
-    console.error('Unknown argument:', argument)
+    console.error('Unknown flag:', flag)
   }
 }
 

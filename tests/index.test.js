@@ -55,27 +55,22 @@ function spawnChildAndSetupListeners({
         : {},
     )
 
-    child.stdout.once('data', (data) => {
+    let stdoutData = ''
+    let stderrData = ''
+
+    child.stdout.on('data', (data) => {
       if (debug) {
         console.log(data.toString())
       } else {
-        try {
-          stdoutExpectation(data)
-        } catch (error) {
-          reject(error)
-        }
+        stdoutData += data.toString()
       }
     })
 
-    child.stderr.once('data', (data) => {
+    child.stderr.on('data', (data) => {
       if (debug) {
         console.error(data.toString())
       } else {
-        try {
-          stderrExpectation(data)
-        } catch (error) {
-          reject(error)
-        }
+        stderrData += data.toString()
       }
     })
 
@@ -86,8 +81,16 @@ function spawnChildAndSetupListeners({
     child.once('exit', (code, signal) => {
       try {
         expect(code).to.equal(exitCodeExpectation)
-        // eslint-disable-next-line unicorn/no-null
-        expect(signal).to.equal(null)
+        expect(signal).to.be.null
+
+        // Pass collected data to expectations
+        if (stdoutExpectation && stdoutData !== '') {
+          stdoutExpectation(stdoutData)
+        }
+        if (stderrExpectation && stderrData !== '') {
+          stderrExpectation(stderrData)
+        }
+
         resolve()
       } catch (error) {
         reject(error)
@@ -97,6 +100,26 @@ function spawnChildAndSetupListeners({
 }
 
 describe('Shutdown-cleanup module', function () {
+  afterEach(function () {
+    // Cleanup: Remove all registered handlers to prevent test interference
+    const allHandlers = listHandlers()
+    for (const phase in allHandlers) {
+      if (Object.hasOwn(allHandlers, phase)) {
+        const handlersInPhase = allHandlers[phase]
+        for (const identifier in handlersInPhase) {
+          if (Object.hasOwn(handlersInPhase, identifier)) {
+            removeHandler(identifier)
+          }
+        }
+      }
+    }
+
+    const allSignals = listSignals()
+    for (const signal of allSignals) {
+      removeSignal(signal)
+    }
+  })
+
   describe('Handler Registration', function () {
     it('should throw a TypeError when registering a synchronous handler', function () {
       expect(() => registerHandler(syncHandler, 'syncHandler')).to.throw(
@@ -339,6 +362,26 @@ describe('Shutdown-cleanup module', function () {
             'Should not have received any output: ' + data.toString(),
           ),
         stderrExpectation: (data) => stderrOutput.push(data.toString().trim()),
+        exitCodeExpectation: 0,
+      })
+    })
+
+    it('should handle multi-phase handlers correctly in order', function () {
+      return spawnChildAndSetupListeners({
+        arguments_: ['--multi-phase'],
+        stdoutExpectation: (data) => {
+          // Expect no output on stdout
+          expect(data).to.equal('')
+        },
+        stderrExpectation: (data) => {
+          const expectedOrder = ['Handler for phase 1', 'Handler for phase 2']
+          const receivedOrder = data
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean)
+
+          expect(receivedOrder).to.eql(expectedOrder)
+        },
         exitCodeExpectation: 0,
       })
     })
