@@ -160,6 +160,30 @@ describe('Shutdown-cleanup module', function () {
     })
   })
 
+  describe('Default signal handling', function () {
+    const defaultSignals = ['SIGINT', 'SIGTERM', 'SIGHUP', 'exit']
+
+    it('should have the default signals registered', function () {
+      expect(listSignals()).to.have.members(defaultSignals)
+    })
+
+    for (const testSignal of defaultSignals) {
+      it(`should handle default signal ${testSignal} correctly`, function () {
+        return spawnChildAndSetupListeners({
+          arguments_: ['--default', testSignal],
+          stdoutExpectation: (data) =>
+            assert.fail('Should not have received any error: ' + data),
+          stderrExpectation: (data) =>
+            expect(data.toString().trim()).to.equal(
+              `Handled default signal: ${testSignal}`,
+            ),
+          exitCodeExpectation:
+            testSignal === 'exit' ? 0 : os.constants.signals[testSignal],
+        })
+      })
+    }
+  })
+
   describe('POSIX signal handling', function () {
     for (const testSignal of nodejsSignals) {
       it(`should handle POSIX signal ${testSignal} correctly`, function () {

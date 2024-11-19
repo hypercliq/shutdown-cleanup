@@ -25,7 +25,7 @@ const globalHandlerIdentifiers = new Set()
 // Register a shutdown handler
 const registerHandler = (
   handler,
-  identifier = generateRandomIdentifier(),
+  identifier = `handler_${Math.random().toString(36).slice(2, 11)}`,
   phase = 1,
 ) => {
   if (typeof handler !== 'function') {
