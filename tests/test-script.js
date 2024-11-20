@@ -26,7 +26,9 @@ switch (flag) {
         console.error(`Handled default signal: ${defaultSignal}`)
       })
 
-      process.kill(process.pid, defaultSignal === 'exit' ? 0 : defaultSignal)
+      defaultSignal === 'beforeExit'
+        ? process.emit(defaultSignal, 0)
+        : process.kill(process.pid, defaultSignal)
     }
 
     break
@@ -57,7 +59,14 @@ switch (flag) {
   case '-e': {
     {
       const strategy = rest[0]
-      setErrorHandlingStrategy(strategy)
+
+      try {
+        setErrorHandlingStrategy(strategy)
+      } catch (error) {
+        console.error(error.message)
+        // eslint-disable-next-line unicorn/no-process-exit
+        process.exit(1)
+      }
 
       // Explicitly set the identifier for the failing handler
       registerHandler(failingHandler, 'failingHandler', 1)

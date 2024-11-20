@@ -101,11 +101,13 @@ const registerSignalHandler = (
     )
   }
 
-  // Enforce global uniqueness of handler identifiers
-  if (globalHandlerIdentifiers.has(identifier)) {
-    throw new Error(
-      `Handler with identifier '${identifier}' already exists globally`,
-    )
+  if (uncatchableSignals.has(signal)) {
+    throw new Error(`Cannot handle uncatchable signal '${signal}'`)
+  }
+
+  // Check if the signal is already handled
+  if (signalHandlers[signal]) {
+    throw new Error(`Handler for signal '${signal}' is already registered`)
   }
 
   // Initialize handler map for the signal if not present
@@ -199,9 +201,13 @@ const setErrorHandlingStrategy = (strategy) => {
 // List all registered handlers both generic and signal-specific
 const listHandlers = () => ({ ...handlers, ...signalHandlers })
 
-const signals = new Set(['SIGTERM', 'SIGHUP', 'SIGINT', 'exit'])
+const signals = new Set(['SIGTERM', 'SIGHUP', 'SIGINT', 'beforeExit'])
+const uncatchableSignals = new Set(['SIGKILL', 'SIGSTOP'])
 
 const addSignal = (signal) => {
+  if (uncatchableSignals.has(signal)) {
+    throw new Error(`Cannot handle uncatchable signal '${signal}'`)
+  }
   if (signals.has(signal)) {
     logger(`Signal already added: ${signal}`)
     return false

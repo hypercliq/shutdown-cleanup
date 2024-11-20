@@ -18,7 +18,9 @@ import {
 // Const defaultSignals = ['SIGINT', 'SIGTERM', 'SIGHUP', 'exit']
 
 // List every signal that is available on the current platform
-const nodejsSignals = Object.keys(os.constants.signals)
+const nodejsSignals = Object.keys(os.constants.signals).filter(
+  (signal) => !['SIGKILL', 'SIGSTOP'].includes(signal),
+)
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 const testScriptPath = path.join(__dirname, 'test-script.js')
@@ -161,7 +163,7 @@ describe('Shutdown-cleanup module', function () {
   })
 
   describe('Default signal handling', function () {
-    const defaultSignals = ['SIGINT', 'SIGTERM', 'SIGHUP', 'exit']
+    const defaultSignals = ['SIGINT', 'SIGTERM', 'SIGHUP', 'beforeExit']
 
     it('should have the default signals registered', function () {
       expect(listSignals()).to.have.members(defaultSignals)
@@ -178,7 +180,7 @@ describe('Shutdown-cleanup module', function () {
               `Handled default signal: ${testSignal}`,
             ),
           exitCodeExpectation:
-            testSignal === 'exit' ? 0 : os.constants.signals[testSignal],
+            testSignal === 'beforeExit' ? 0 : os.constants.signals[testSignal],
         })
       })
     }
@@ -299,7 +301,9 @@ describe('Shutdown-cleanup module', function () {
         stdoutExpectation: (data) =>
           assert.fail('Should not have received any output: ' + data),
         stderrExpectation: (data) =>
-          assert.fail('Should not have received any error: ' + data),
+          expect(data.toString().trim()).to.equal(
+            "handling strategy must be either 'continue' or 'stop'",
+          ),
         exitCodeExpectation: 1,
       })
     })
