@@ -10,184 +10,11 @@ const logger = (...message) => {
   }
 }
 
-// Using an object to store handlers, with integers as keys
-const handlers = {}
-// Default error handling strategy: 'continue' or 'stop'
+const signals = new Set(['SIGTERM', 'SIGHUP', 'SIGINT', 'beforeExit'])
+const uncatchableSignals = new Set(['SIGKILL', 'SIGSTOP'])
+const removedSignals = new Set()
+
 let errorHandlingStrategy = 'continue'
-
-// Utility function to generate random identifiers if not provided
-const generateRandomIdentifier = () =>
-  `handler_${Math.random().toString(36).slice(2, 11)}`
-
-// Global registry for handler identifiers
-const globalHandlerIdentifiers = new Set()
-
-// Register a shutdown handler
-const registerHandler = (
-  handler,
-  identifier = `handler_${Math.random().toString(36).slice(2, 11)}`,
-  phase = 1,
-) => {
-  if (typeof handler !== 'function') {
-    throw new TypeError('Handler must be a function')
-  }
-
-  // Check if the handler is asynchronous
-  const isAsync = handler.constructor.name === 'AsyncFunction'
-  if (!isAsync) {
-    throw new TypeError(
-      'Handler must be an asynchronous function (returning a Promise)',
-    )
-  }
-
-  const phaseKey = Number.parseInt(phase, 10)
-  if (Number.isNaN(phaseKey) || phaseKey < 1) {
-    throw new Error('Phase must be a positive integer')
-  }
-
-  // Enforce global uniqueness
-  if (globalHandlerIdentifiers.has(identifier)) {
-    throw new Error(
-      `Handler with identifier '${identifier}' already exists globally`,
-    )
-  }
-
-  handlers[phaseKey] ||= {}
-
-  if (handlers[phaseKey][identifier]) {
-    throw new Error(
-      `Handler with identifier '${identifier}' already exists in phase '${phaseKey}'`,
-    )
-  }
-
-  handlers[phaseKey][identifier] = handler
-  globalHandlerIdentifiers.add(identifier)
-  logger(
-    `Handler registered for phase '${phaseKey}', identifier: '${identifier}'`,
-  )
-}
-
-const removeHandler = (identifier) => {
-  for (const phase in handlers) {
-    if (handlers[phase][identifier]) {
-      delete handlers[phase][identifier]
-      globalHandlerIdentifiers.delete(identifier)
-      logger(`Removed handler: ${identifier}`)
-      return true
-    }
-  }
-
-  return false
-}
-
-// Updated signalHandlers to map signal to a map of identifier-handler pairs
-const signalHandlers = {}
-
-// Register a signal-specific handler with centralized listener
-const registerSignalHandler = (
-  signal,
-  handler,
-  shouldTerminate = true,
-  identifier = generateRandomIdentifier(),
-) => {
-  if (typeof handler !== 'function') {
-    throw new TypeError('Handler must be a function')
-  }
-
-  const isAsync = handler.constructor.name === 'AsyncFunction'
-  if (!isAsync) {
-    throw new TypeError(
-      'Handler must be an asynchronous function (returning a Promise)',
-    )
-  }
-
-  if (uncatchableSignals.has(signal)) {
-    throw new Error(`Cannot handle uncatchable signal '${signal}'`)
-  }
-
-  // Check if the signal is already handled
-  if (signalHandlers[signal]) {
-    throw new Error(`Handler for signal '${signal}' is already registered`)
-  }
-
-  // Initialize handler map for the signal if not present
-  if (!signalHandlers[signal]) {
-    signalHandlers[signal] = new Map()
-
-    // Attach a single listener for the signal
-    process.on(signal, async () => {
-      if (isShuttingDown) return
-
-      isShuttingDown = true
-      logger(`Shutting down on ${signal}`)
-
-      const shutdownTimer = setTimeout(() => {
-        console.warn('Shutdown process timed out. Forcing exit.')
-        process.exit(customExitCode || DEFAULT_EXIT_CODE)
-      }, shutdownTimeout)
-
-      // Execute all handlers associated with the signal
-      for (const [
-        id,
-        { handler: sigHandler, shouldTerminate: term },
-      ] of signalHandlers[signal]) {
-        try {
-          await sigHandler(signal)
-        } catch (error) {
-          console.error(
-            `Error in handler '${id}' for signal '${signal}': ${error}`,
-          )
-          if (errorHandlingStrategy === 'stop') {
-            console.error('Stopping shutdown process due to error in handler.')
-            clearTimeout(shutdownTimer)
-            process.exit(customExitCode || DEFAULT_EXIT_CODE)
-          }
-        }
-
-        if (term) {
-          await shutdown(signal)
-          break // Proceed to shutdown if shouldTerminate is true
-        }
-      }
-
-      clearTimeout(shutdownTimer)
-      logger('Shutdown completed')
-      const exitCode = customExitCode || getExitCode(signal)
-      logger(`Shutdown exitCode: ${exitCode}`)
-      process.exit(exitCode)
-    })
-  }
-
-  // Register the handler with its unique identifier
-  signalHandlers[signal].set(identifier, { handler, shouldTerminate })
-  globalHandlerIdentifiers.add(identifier)
-  logger(
-    `Signal handler registered for '${signal}', identifier: '${identifier}'`,
-  )
-
-  // Return the identifier for reference
-  return identifier
-}
-
-// Remove a signal-specific handler
-const removeSignalHandler = (signal, identifier) => {
-  const handlersMap = signalHandlers[signal]
-  if (handlersMap?.has(identifier)) {
-    handlersMap.delete(identifier)
-    globalHandlerIdentifiers.delete(identifier)
-    logger(`Removed signal handler '${identifier}' for signal '${signal}'`)
-
-    // If no handlers remain, remove the listener
-    if (handlersMap.size === 0) {
-      process.removeAllListeners(signal)
-      delete signalHandlers[signal]
-      logger(`Removed all handlers and listener for signal '${signal}'`)
-    }
-    return true
-  }
-
-  return false
-}
 
 // Sets the global error handling strategy
 const setErrorHandlingStrategy = (strategy) => {
@@ -198,11 +25,199 @@ const setErrorHandlingStrategy = (strategy) => {
   errorHandlingStrategy = strategy
 }
 
-// List all registered handlers both generic and signal-specific
-const listHandlers = () => ({ ...handlers, ...signalHandlers })
+const registeredHandlers = new Map()
 
-const signals = new Set(['SIGTERM', 'SIGHUP', 'SIGINT', 'beforeExit'])
-const uncatchableSignals = new Set(['SIGKILL', 'SIGSTOP'])
+const registerPhaseHandler = (phaseKey, phaseHandlers, identifier, handler) => {
+  if (Number.isNaN(phaseKey) || phaseKey < 1) {
+    throw new Error('Phase must be a positive integer greater than 0')
+  }
+
+  phaseHandlers.set(identifier, {
+    type: 'phase',
+    handler,
+  })
+
+  logger(
+    `Handler registered for phase '${phaseKey}', identifier: '${identifier}'`,
+  )
+}
+
+const registerSignalHandler = (
+  signal,
+  phaseHandlers,
+  shouldTerminate,
+  identifier,
+  handler,
+) => {
+  if (uncatchableSignals.has(signal)) {
+    throw new Error(`Cannot handle uncatchable signal '${signal}'`)
+  }
+
+  // Check if signal already has a handler in this phase
+  for (const handlerEntry of phaseHandlers.values()) {
+    if (handlerEntry.signal === signal) {
+      throw new Error(`Signal ${signal} already has a handler`)
+    }
+  }
+
+  if (signals.has(signal)) {
+    signals.delete(signal)
+    removedSignals.add(signal)
+    process.off(signal, shutdown)
+    logger(
+      `Signal ${signal} removed from main listener due to specific handler`,
+    )
+  }
+
+  const terminate = shouldTerminate !== false // Default to true if undefined
+
+  // Define the listener for the signal
+  const listener = (signal) => {
+    const customHandler = phaseHandlers.get(identifier)
+
+    if (!customHandler) {
+      console.warn(`No handler found for signal: ${signal}`)
+      return
+    }
+
+    logger(`Handling signal: ${signal}`)
+
+    Promise.resolve()
+      .then(() => customHandler.handler(signal))
+      .then(() => {
+        if (customHandler.shouldTerminate) {
+          shutdown(signal)
+        }
+      })
+      .catch((error) => {
+        console.error(`Error in handler '${identifier}': ${error}`)
+        if (errorHandlingStrategy === 'stop') {
+          console.error('Stopping shutdown process due to error in handler.')
+          process.exit(customExitCode ?? 1) //eslint-disable-line unicorn/no-process-exit
+        }
+      })
+  }
+
+  // Register the handler
+  phaseHandlers.set(identifier, {
+    type: 'signal',
+    signal,
+    handler,
+    shouldTerminate: terminate,
+    listener,
+  })
+
+  // Attach the listener
+  process.on(signal, listener)
+  logger(`Signal handler registered for signal: ${signal}`)
+}
+
+// Registers a handler either for a specific signal or a phase
+const registerHandler = (handler, options = {}) => {
+  if (typeof handler !== 'function') {
+    throw new TypeError('Handler must be a function')
+  }
+
+  const {
+    identifier = `handler_${Math.random().toString(36).slice(2, 11)}`,
+    phase,
+    signal,
+    shouldTerminate,
+  } = options
+
+  // Check if identifier already exists
+  for (const phaseHandlers of registeredHandlers.values()) {
+    if (phaseHandlers.has(identifier)) {
+      throw new Error(`Handler with identifier '${identifier}' already exists`)
+    }
+  }
+
+  if (signal && phase) {
+    throw new Error('Cannot specify both "signal" and "phase"')
+  }
+
+  const phaseKey = signal ? 0 : Number.parseInt(phase ?? '1', 10)
+
+  let phaseHandlers = registeredHandlers.get(phaseKey)
+  if (!phaseHandlers) {
+    phaseHandlers = new Map()
+    registeredHandlers.set(phaseKey, phaseHandlers)
+  }
+
+  if (signal) {
+    registerSignalHandler(
+      signal,
+      phaseHandlers,
+      shouldTerminate,
+      identifier,
+      handler,
+    )
+  } else {
+    registerPhaseHandler(phaseKey, phaseHandlers, identifier, handler)
+  }
+
+  return identifier
+}
+
+const removeHandler = (identifier) => {
+  for (const [phase, phaseHandlers] of registeredHandlers) {
+    if (phaseHandlers.has(identifier)) {
+      const entry = phaseHandlers.get(identifier)
+
+      if (entry.type === 'signal') {
+        process.off(entry.signal, entry.listener)
+        logger(`Signal handler removed for signal: ${entry.signal}`)
+
+        if (removedSignals.has(entry.signal)) {
+          signals.add(entry.signal)
+          attachListener(entry.signal)
+          removedSignals.delete(entry.signal)
+          logger(`Signal ${entry.signal} re-added to main listener`)
+        }
+      } else {
+        logger(`Handler removed for phase: ${phase}`)
+      }
+
+      phaseHandlers.delete(identifier)
+
+      if (phaseHandlers.size === 0) {
+        registeredHandlers.delete(phase)
+        logger(`Phase ${phase} removed due to no handlers`)
+      }
+
+      return true
+    }
+  }
+
+  return false
+}
+
+// List all registered handlers both generic and signal-specific
+const listHandlers = () => {
+  const handlerList = []
+
+  const sortedPhases = [...registeredHandlers.keys()].sort((a, b) => a - b)
+
+  for (const phase of sortedPhases) {
+    const phaseHandlers = registeredHandlers.get(phase)
+    const phaseKey = phase === 0 ? 'signal' : phase
+    const phaseEntry = {
+      phaseKey,
+      handlers: [],
+    }
+
+    for (const [identifier, handler] of phaseHandlers) {
+      phaseEntry.handlers.push({
+        identifier,
+        ...handler,
+      })
+    }
+
+    handlerList.push(phaseEntry)
+  }
+
+  return handlerList
+}
 
 const addSignal = (signal) => {
   if (uncatchableSignals.has(signal)) {
@@ -213,6 +228,17 @@ const addSignal = (signal) => {
     return false
   }
 
+  const signalHandlers = registeredHandlers.get(0)
+
+  if (signalHandlers) {
+    for (const handlerEntry of signalHandlers.values()) {
+      if (handlerEntry.signal === signal) {
+        logger(`Signal ${signal} already has a handler`)
+        return false
+      }
+    }
+  }
+
   signals.add(signal)
   attachListener(signal)
   logger(`Added signal: ${signal}`)
@@ -221,7 +247,7 @@ const addSignal = (signal) => {
 
 const removeSignal = (signal) => {
   if (signals.delete(signal)) {
-    process.removeListener(signal, shutdown)
+    process.off(signal, shutdown)
     logger(`Removed signal: ${signal}`)
     return true
   }
@@ -229,13 +255,26 @@ const removeSignal = (signal) => {
   return false
 }
 
-const listSignals = () => [...signals]
+const listSignals = ({ includeSignalHandlers = false } = {}) => {
+  const signalsList = [...signals]
+  if (includeSignalHandlers) {
+    const signalHandlers = registeredHandlers.get(0)
+    if (signalHandlers) {
+      for (const handlerEntry of signalHandlers.values()) {
+        if (!signalsList.includes(handlerEntry.signal)) {
+          signalsList.push(handlerEntry.signal)
+        }
+      }
+    }
+  }
+  return signalsList
+}
 
 const DEFAULT_EXIT_CODE = 1
 
 const getExitCode = (signal) => {
   let code
-  if (typeof signal === 'number') {
+  if (Number.isInteger(signal)) {
     code = signal
   } else if (signal instanceof Error) {
     code = signal.errno
@@ -246,12 +285,11 @@ const getExitCode = (signal) => {
   return code ?? DEFAULT_EXIT_CODE
 }
 
-let isShuttingDown = false
 let shutdownTimeout = 30_000 // 30 seconds timeout for the shutdown process
 
 // Function to set the shutdown timeout
 const setShutdownTimeout = (timeout) => {
-  if (typeof timeout !== 'number' || timeout < 0) {
+  if (Number.isNaN(timeout) || timeout <= 0) {
     throw new Error('Shutdown timeout must be a positive number')
   }
 
@@ -263,7 +301,7 @@ let customExitCode // Variable to store custom exit code
 
 // Function to set a custom exit code
 const setCustomExitCode = (code) => {
-  if (typeof code !== 'number') {
+  if (Number.isNaN(code)) {
     throw new TypeError('Custom exit code must be a number')
   }
 
@@ -271,6 +309,9 @@ const setCustomExitCode = (code) => {
   customExitCode = code
 }
 
+let isShuttingDown = false
+
+// Main shutdown handler
 const shutdown = async (signal) => {
   if (isShuttingDown) {
     logger('Shutdown already in progress')
@@ -282,41 +323,36 @@ const shutdown = async (signal) => {
 
   const shutdownTimer = setTimeout(() => {
     console.warn('Shutdown process timed out. Forcing exit.')
-
-    // eslint-disable-next-line unicorn/no-process-exit
-    process.exit(customExitCode || 1) // Use custom exit code if timeout occurs
+    process.exit(customExitCode ?? 1) // eslint-disable-line unicorn/no-process-exit
   }, shutdownTimeout)
 
-  const sortedPhases = Object.keys(handlers)
-    .map(Number)
+  const sortedPhases = [...registeredHandlers.keys()]
+    .filter((phase) => phase !== 0)
     .sort((a, b) => a - b)
 
   for (const phase of sortedPhases) {
-    for (const identifier of Object.keys(handlers[phase])) {
-      try {
-        await handlers[phase][identifier](signal)
-      } catch (error) {
-        console.error(
-          `Error in shutdown handler '${identifier}' for phase '${phase}': ${error}`,
-        )
-        if (errorHandlingStrategy === 'stop') {
-          console.error('Stopping shutdown process due to error in handler.')
-          clearTimeout(shutdownTimer)
-
-          // eslint-disable-next-line unicorn/no-process-exit
-          process.exit(customExitCode || 1) // Use custom exit code if error occurs
-        }
-      }
+    const phaseHandlers = registeredHandlers.get(phase)
+    for (const [identifier, handlerEntry] of phaseHandlers) {
+      await Promise.resolve()
+        .then(() => handlerEntry.handler(signal))
+        .catch((error) => {
+          console.error(
+            `Error in shutdown handler '${identifier}' for phase '${phase}': ${error}`,
+          )
+          if (errorHandlingStrategy === 'stop') {
+            console.error('Stopping shutdown process due to error in handler.')
+            clearTimeout(shutdownTimer)
+            process.exit(customExitCode ?? 1) //eslint-disable-line unicorn/no-process-exit
+          }
+        })
     }
   }
 
   clearTimeout(shutdownTimer)
   logger('Shutdown completed')
-  const exitCode = customExitCode || getExitCode(signal)
+  const exitCode = customExitCode ?? getExitCode(signal)
   logger(`Shutdown exitCode: ${exitCode}`)
-
-  // eslint-disable-next-line unicorn/no-process-exit
-  process.exit(exitCode)
+  process.exit(exitCode) //eslint-disable-line unicorn/no-process-exit
 }
 
 const attachListener = (signal) => process.on(signal, shutdown)
@@ -329,10 +365,8 @@ export {
   listHandlers,
   listSignals,
   registerHandler,
-  registerSignalHandler,
   removeHandler,
   removeSignal,
-  removeSignalHandler,
   setCustomExitCode,
   setErrorHandlingStrategy,
   setShutdownTimeout,

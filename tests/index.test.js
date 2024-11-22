@@ -1,23 +1,10 @@
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 import url from 'node:url'
-import * as os from 'node:os'
+import os from 'node:os'
 import process from 'node:process'
 import { assert, expect } from 'chai'
-import {
-  addSignal,
-  listHandlers,
-  listSignals,
-  registerHandler,
-  registerSignalHandler,
-  removeHandler,
-  removeSignal,
-  removeSignalHandler,
-} from '../index.js'
 
-// Const defaultSignals = ['SIGINT', 'SIGTERM', 'SIGHUP', 'exit']
-
-// List every signal that is available on the current platform
 const nodejsSignals = Object.keys(os.constants.signals).filter(
   (signal) => !['SIGKILL', 'SIGSTOP'].includes(signal),
 )
@@ -25,25 +12,14 @@ const nodejsSignals = Object.keys(os.constants.signals).filter(
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 const testScriptPath = path.join(__dirname, 'test-script.js')
 
-const genericHandler = async () => {}
-
-const syncHandler = (signal) => {
-  console.log(`Handled signal: ${signal}`)
-}
-
-const asyncHandler = async (signal) => {
-  await new Promise((resolve) => setTimeout(resolve, 200))
-  console.log(`Handled signal: ${signal}`)
-}
-
-function spawnChildAndSetupListeners({
+const spawnChildAndSetupListeners = ({
   arguments_,
   stdoutExpectation,
   stderrExpectation,
   exitCodeExpectation,
   debug = false,
-}) {
-  return new Promise((resolve, reject) => {
+}) =>
+  new Promise((resolve, reject) => {
     const child = spawn(
       'node',
       [testScriptPath, ...arguments_],
@@ -56,9 +32,6 @@ function spawnChildAndSetupListeners({
           }
         : {},
     )
-
-    let stdoutData = ''
-    let stderrData = ''
 
     child.stdout.on('data', (data) => {
       if (debug) {
@@ -83,23 +56,13 @@ function spawnChildAndSetupListeners({
     child.once('exit', (code, signal) => {
       try {
         expect(code).to.equal(exitCodeExpectation)
-        expect(signal).to.be.null
-
-        // Pass collected data to expectations
-        if (stdoutExpectation && stdoutData !== '') {
-          stdoutExpectation(stdoutData)
-        }
-        if (stderrExpectation && stderrData !== '') {
-          stderrExpectation(stderrData)
-        }
-
+        expect(signal).to.equal(null) // eslint-disable-line unicorn/no-null
         resolve()
       } catch (error) {
         reject(error)
       }
     })
   })
-}
 
 describe('Shutdown-cleanup module', function () {
   afterEach(function () {
@@ -123,21 +86,175 @@ describe('Shutdown-cleanup module', function () {
   })
 
   describe('Handler Registration', function () {
-    it('should throw a TypeError when registering a synchronous handler', function () {
-      expect(() => registerHandler(syncHandler, 'syncHandler')).to.throw(
-        TypeError,
-        'Handler must be an asynchronous function (returning a Promise)',
-      )
+    it('should register, list and remove a handler', function () {
+      const identifier = 'testSync'
+      return spawnChildAndSetupListeners({
+        arguments_: ['--register-handler', 'remove-it', identifier],
+        stdoutExpectation: (data) => {
+          data = JSON.parse(data.toString())
+          expect(data.identifier).to.equal(identifier)
+          expect(data.listBefore).to.have.lengthOf(1)
+          expect(data.listBefore[0]).to.have.property('phaseKey', 1)
+          expect(data.listBefore[0]).to.have.property('handlers')
+          expect(data.listBefore[0].handlers).to.have.lengthOf(1)
+          expect(data.listBefore[0].handlers[0]).to.have.property(
+            'identifier',
+            identifier,
+          )
+          expect(data.listBefore[0].handlers[0]).to.have.property(
+            'type',
+            'phase',
+          )
+          expect(data.removed).to.equal(true)
+          expect(data.listAfter).to.have.lengthOf(0)
+        },
+        stderrExpectation: (data) =>
+          assert.fail('Should not have received any error: ' + data),
+        exitCodeExpectation: 0,
+      })
     })
 
-    it('should register, list and remove an asynchronous generic handler', function () {
+    it('should register, list and remove a signal handler', function () {
       const identifier = 'testAsync'
-      registerHandler(asyncHandler, identifier, 1)
-      const handlers = listHandlers()
-      expect(handlers['1']).to.have.property(identifier)
-      const removed = removeHandler(identifier)
-      expect(removed).to.equal(true)
-      expect(listHandlers()['1']).to.not.have.property(identifier)
+      const signal = 'SIGUSR2'
+      return spawnChildAndSetupListeners({
+        arguments_: [
+          '--register-handler',
+          'remove-it',
+          identifier,
+          signal,
+          true,
+        ],
+        stdoutExpectation: (data) => {
+          data = JSON.parse(data.toString())
+          expect(data.identifier).to.equal(identifier)
+          expect(data.listBefore).to.have.lengthOf(1)
+          expect(data.listBefore[0]).to.have.property('phaseKey', 'signal')
+          expect(data.listBefore[0]).to.have.property('handlers')
+          expect(data.listBefore[0].handlers).to.have.lengthOf(1)
+          expect(data.listBefore[0].handlers[0]).to.have.property(
+            'identifier',
+            identifier,
+          )
+          expect(data.listBefore[0].handlers[0]).to.have.property(
+            'type',
+            'signal',
+          )
+          expect(data.signalsBefore).to.equal(true)
+          expect(data.removed).to.equal(true)
+          expect(data.listAfter).to.have.lengthOf(0)
+          // SIGUSR2 should not be anywhere in the listened signals
+          expect(data.signalsAfter).to.equal(false)
+        },
+        stderrExpectation: (data) =>
+          assert.fail('Should not have received any error: ' + data),
+        exitCodeExpectation: 0,
+      })
+    })
+
+    it('should register, list and remove a signal handler for a default signal', function () {
+      const identifier = 'testDefaultSignal'
+      const signal = 'SIGINT'
+      return spawnChildAndSetupListeners({
+        arguments_: ['--register-handler', 'remove-it', identifier, signal],
+        stdoutExpectation: (data) => {
+          data = JSON.parse(data.toString())
+          expect(data.identifier).to.equal(identifier)
+          expect(data.listBefore).to.have.lengthOf(1)
+          expect(data.listBefore[0]).to.have.property('phaseKey', 'signal')
+          expect(data.listBefore[0]).to.have.property('handlers')
+          expect(data.listBefore[0].handlers).to.have.lengthOf(1)
+          expect(data.listBefore[0].handlers[0]).to.have.property(
+            'identifier',
+            identifier,
+          )
+          expect(data.listBefore[0].handlers[0]).to.have.property(
+            'type',
+            'signal',
+          )
+          expect(data.signalsBefore).to.equal(true)
+          expect(data.removed).to.equal(true)
+          expect(data.listAfter).to.have.lengthOf(0)
+          // SIGINT is a default signal, so it should be re-added to the main listener
+          expect(data.signalsAfter).to.equal(true)
+        },
+        stderrExpectation: (data) =>
+          assert.fail('Should not have received any error: ' + data),
+        exitCodeExpectation: 0,
+      })
+    })
+
+    it('should error when registering a handler with both signal and phase', function () {
+      return spawnChildAndSetupListeners({
+        arguments_: ['--register-handler', 'with-signal-and-phase'],
+        stdoutExpectation: (data) =>
+          assert.fail('Should not have received any output: ' + data),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.match(
+            /Cannot specify both "signal" and "phase"/,
+          ),
+        exitCodeExpectation: 1,
+      })
+    })
+
+    it('should error when registering a handler with an invalid phase', function () {
+      return spawnChildAndSetupListeners({
+        arguments_: ['--register-handler', 'with-invalid-phase'],
+        stdoutExpectation: (data) =>
+          assert.fail('Should not have received any output: ' + data),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.match(
+            /Phase must be a positive integer greater than 0/,
+          ),
+        exitCodeExpectation: 1,
+      })
+    })
+
+    it('should error when registering a handler with a duplicate identifier', function () {
+      const identifier = 'duplicateHandler'
+      return spawnChildAndSetupListeners({
+        arguments_: [
+          '--register-handler',
+          'with-duplicate-identifier',
+          identifier,
+        ],
+        stdoutExpectation: (data) =>
+          assert.fail('Should not have received any output: ' + data),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.match(
+            new RegExp(
+              `Handler with identifier '${identifier}' already exists`,
+            ),
+          ),
+        exitCodeExpectation: 1,
+      })
+    })
+
+    it('should error when registering a handler for an uncatchable signal', function () {
+      const signal = 'SIGKILL'
+      return spawnChildAndSetupListeners({
+        arguments_: ['--register-handler', 'with-uncatchable-signal', signal],
+        stdoutExpectation: (data) =>
+          assert.fail('Should not have received any output: ' + data),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.match(
+            new RegExp(`Cannot handle uncatchable signal '${signal}'`),
+          ),
+        exitCodeExpectation: 1,
+      })
+    })
+
+    it('should return false when removing a non-existent handler', function () {
+      return spawnChildAndSetupListeners({
+        arguments_: ['--register-handler', 'remove-non-existent'],
+        stdoutExpectation: (data) => {
+          const result = JSON.parse(data.toString())
+          expect(result.removed).to.equal(false)
+        },
+        stderrExpectation: (data) =>
+          assert.fail('Should not have received any error: ' + data),
+        exitCodeExpectation: 0,
+      })
     })
 
     it('should prevent registering handlers with duplicate identifiers', function () {
@@ -166,19 +283,31 @@ describe('Shutdown-cleanup module', function () {
     const defaultSignals = ['SIGINT', 'SIGTERM', 'SIGHUP', 'beforeExit']
 
     it('should have the default signals registered', function () {
-      expect(listSignals()).to.have.members(defaultSignals)
+      return spawnChildAndSetupListeners({
+        arguments_: ['--list-default-signals'],
+        stdoutExpectation: (data) => {
+          const signals = JSON.parse(data.toString())
+          expect(signals).to.have.lengthOf(defaultSignals.length)
+          for (const signal of defaultSignals) {
+            expect(signals).to.include(signal)
+          }
+        },
+        stderrExpectation: (data) =>
+          assert.fail('Should not have received any error: ' + data),
+        exitCodeExpectation: 0,
+      })
     })
 
     for (const testSignal of defaultSignals) {
       it(`should handle default signal ${testSignal} correctly`, function () {
         return spawnChildAndSetupListeners({
-          arguments_: ['--default', testSignal],
+          arguments_: ['--handle-default-signal', testSignal],
           stdoutExpectation: (data) =>
-            assert.fail('Should not have received any error: ' + data),
-          stderrExpectation: (data) =>
             expect(data.toString().trim()).to.equal(
               `Handled default signal: ${testSignal}`,
             ),
+          stderrExpectation: (data) =>
+            assert.fail('Should not have received any error: ' + data),
           exitCodeExpectation:
             testSignal === 'beforeExit' ? 0 : os.constants.signals[testSignal],
         })
@@ -190,17 +319,14 @@ describe('Shutdown-cleanup module', function () {
     for (const testSignal of nodejsSignals) {
       it(`should handle POSIX signal ${testSignal} correctly`, function () {
         return spawnChildAndSetupListeners({
-          arguments_: ['-s', testSignal],
+          arguments_: ['--handle-posix-signal', testSignal],
           stdoutExpectation: (data) =>
-            assert.fail('Should not have received any output: ' + data),
-          stderrExpectation: (data) =>
             expect(data.toString().trim()).to.equal(
               `Handled signal: ${testSignal}`,
             ),
-          exitCodeExpectation:
-            testSignal === 'SIGSTOP' || testSignal === 'SIGKILL'
-              ? 1
-              : os.constants.signals[testSignal],
+          stderrExpectation: (data) =>
+            assert.fail('Should not have received any error: ' + data),
+          exitCodeExpectation: os.constants.signals[testSignal],
         })
       })
     }
@@ -209,7 +335,7 @@ describe('Shutdown-cleanup module', function () {
   describe('Node lifecycle events', function () {
     it('should handle unhandledRejection correctly', function () {
       return spawnChildAndSetupListeners({
-        arguments_: ['-l', 'unhandled'],
+        arguments_: ['--node-lifecycle', 'unhandled'],
         stdoutExpectation: (data) =>
           assert.fail('Should not have received any output: ' + data),
         stderrExpectation: (data) =>
@@ -222,7 +348,7 @@ describe('Shutdown-cleanup module', function () {
 
     it('should handle beforeExit correctly', function () {
       return spawnChildAndSetupListeners({
-        arguments_: ['-l', 'beforeExit'],
+        arguments_: ['--node-lifecycle', 'beforeExit'],
         stdoutExpectation: (data) =>
           expect(data.toString().trim()).to.equal('Handler for beforeExit: 0'),
         stderrExpectation: (data) =>
@@ -233,7 +359,7 @@ describe('Shutdown-cleanup module', function () {
 
     it('should handle uncaughtException correctly', function () {
       return spawnChildAndSetupListeners({
-        arguments_: ['-l', 'uncaught'],
+        arguments_: ['--node-lifecycle', 'uncaught'],
         stdoutExpectation: (data) =>
           assert.fail('Should not have received any output: ' + data),
         stderrExpectation: (data) =>
@@ -245,64 +371,67 @@ describe('Shutdown-cleanup module', function () {
     })
   })
 
-  describe('Signals and handlers', function () {
+  describe('Custom signals and events', function () {
     it('should add and remove a signal', function () {
-      const signal = 'SIGUSR2'
-      const addResult = addSignal(signal)
-      expect(addResult).to.equal(true)
-      expect(listSignals()).to.include(signal)
-      const removeResult = removeSignal(signal)
-      expect(removeResult).to.equal(true)
-      expect(listSignals()).to.not.include(signal)
+      return spawnChildAndSetupListeners({
+        arguments_: ['--add-remove-signal', 'SIGUSR2'],
+        stdoutExpectation: (data) => {
+          data = JSON.parse(data.toString())
+          expect(data.added).to.equal(true)
+          expect(data.listBefore).to.include('SIGUSR2')
+          expect(data.removed).to.equal(true)
+          expect(data.listAfter).to.not.include('SIGUSR2')
+        },
+        stderrExpectation: (data) =>
+          assert.fail('Should not have received any error: ' + data),
+        exitCodeExpectation: 0,
+      })
     })
 
-    it('should add and remove a signal handler', function () {
-      const signal = 'SIGUSR2'
-
-      // Register the signal handler and capture the returned identifier
-      const identifier = registerSignalHandler(signal, asyncHandler, true)
-
-      // List all handlers
-      const handlers = listHandlers()
-
-      // Ensure the signal is registered
-      expect(handlers).to.have.property(signal)
-
-      // Access the handler using the captured identifier
-      const signalHandlersMap = handlers[signal]
-      expect(signalHandlersMap).to.be.instanceOf(Map)
-      expect(signalHandlersMap.has(identifier)).to.be.true
-      expect(signalHandlersMap.get(identifier).handler).to.equal(asyncHandler)
-
-      // Remove the signal handler using the signal and identifier
-      const removeResult = removeSignalHandler(signal, identifier)
-      expect(removeResult).to.equal(true)
-
-      // Ensure the signal is no longer registered if no other handlers exist
-      expect(listHandlers()).to.not.have.property(signal)
+    it('should not add an uncatchable signal', function () {
+      const uncatchableSignal = 'SIGKILL'
+      return spawnChildAndSetupListeners({
+        arguments_: ['--add-remove-signal', uncatchableSignal],
+        stdoutExpectation: (data) =>
+          assert.fail('Should not have received any output: ' + data),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.match(
+            new RegExp(
+              `Cannot handle uncatchable signal '${uncatchableSignal}'`,
+            ),
+          ),
+        exitCodeExpectation: 1,
+      })
     })
 
-    it('should register, list and remove an asynchronous generic handler', function () {
-      const identifier = 'testAsync'
-
-      registerHandler(asyncHandler, identifier, 1)
-      const handlers = listHandlers()
-      expect(handlers['1']).to.have.property(identifier)
-      const removed = removeHandler(identifier)
-      expect(removed).to.equal(true)
-      expect(listHandlers()['1']).to.not.have.property(identifier)
+    it('should not add a signal twice', function () {
+      return spawnChildAndSetupListeners({
+        arguments_: ['--add-remove-signal', 'SIGUSR2', 'SIGUSR2'],
+        stdoutExpectation: (data) => {
+          data = JSON.parse(data.toString())
+          expect(data.added).to.equal(true)
+          expect(data.duplicate).to.equal(false)
+          expect(data.listBefore).to.include('SIGUSR2')
+          expect(data.removed).to.equal(true)
+          expect(data.listAfter).to.not.include('SIGUSR2')
+        },
+        stderrExpectation: (data) => {
+          assert.fail('Should not have received any error: ' + data)
+        },
+        exitCodeExpectation: 0,
+      })
     })
   })
 
   describe('Error handling strategy', function () {
     it('should error on invalid strategy', function () {
       return spawnChildAndSetupListeners({
-        arguments_: ['-e', 'invalid'],
+        arguments_: ['--strategy', 'invalid'],
         stdoutExpectation: (data) =>
           assert.fail('Should not have received any output: ' + data),
         stderrExpectation: (data) =>
-          expect(data.toString().trim()).to.equal(
-            "handling strategy must be either 'continue' or 'stop'",
+          expect(data.toString().trim()).to.match(
+            /handling strategy must be either 'continue' or 'stop'/,
           ),
         exitCodeExpectation: 1,
       })
@@ -310,17 +439,13 @@ describe('Shutdown-cleanup module', function () {
 
     it('should continue shutdown even if a handler fails when strategy is "continue"', function () {
       return spawnChildAndSetupListeners({
-        arguments_: ['-e', 'continue'],
-        stdoutExpectation: (data) => {
-          expect(data.toString().trim()).to.equal('Handler for succeed')
-        },
-        stderrExpectation: (data) => {
-          expect(data.toString().trim())
-            .to.be.a('string')
-            .and.to.equal(
-              "Error in shutdown handler 'failingHandler' for phase '1': Error: Some error",
-            )
-        },
+        arguments_: ['--strategy', 'continue'],
+        stdoutExpectation: (data) =>
+          expect(data.toString().trim()).to.equal('Handler for succeed'),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.equal(
+            "Error in shutdown handler 'failingHandler' for phase '1': Error: Something went wrong",
+          ),
         exitCodeExpectation: 0,
       })
     })
@@ -328,7 +453,7 @@ describe('Shutdown-cleanup module', function () {
     it('should handle stop strategy correctly', function () {
       const stderrOutput = []
       return spawnChildAndSetupListeners({
-        arguments_: ['-e', 'stop'],
+        arguments_: ['--strategy', 'stop'],
         stdoutExpectation: (data) =>
           assert.fail('Should not have received any output: ' + data),
         stderrExpectation: (data) => stderrOutput.push(data.toString().trim()),
@@ -340,7 +465,7 @@ describe('Shutdown-cleanup module', function () {
   describe('Custom exit code', function () {
     it('should set a custom exit code', function () {
       return spawnChildAndSetupListeners({
-        arguments_: ['-x', '42'],
+        arguments_: ['--custom-exit-code', '42'],
         stdoutExpectation: (data) =>
           expect(data.toString().trim()).to.equal('Handler for exit'),
         stderrExpectation: (data) =>
@@ -348,12 +473,25 @@ describe('Shutdown-cleanup module', function () {
         exitCodeExpectation: 42,
       })
     })
+
+    it('should error when setting a non-numeric custom exit code', function () {
+      return spawnChildAndSetupListeners({
+        arguments_: ['--custom-exit-code', 'invalid'],
+        stdoutExpectation: (data) =>
+          assert.fail('Should not have received any output: ' + data),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.match(
+            /Custom exit code must be a number/,
+          ),
+        exitCodeExpectation: 1,
+      })
+    })
   })
 
   describe('Shutdown timeout', function () {
     it('should set a custom shutdown timeout', function () {
       return spawnChildAndSetupListeners({
-        arguments_: ['-t', '1000'],
+        arguments_: ['--custom-timeout', '1000'],
         stdoutExpectation: (data) =>
           assert.fail('Should not have received any output: ' + data),
         stderrExpectation: (data) =>
@@ -363,34 +501,86 @@ describe('Shutdown-cleanup module', function () {
         exitCodeExpectation: 1,
       })
     })
-  })
 
-  describe('Handle custom events', function () {
-    it('should handle custom events correctly', function () {
+    it('should error when setting a negative shutdown timeout', function () {
       return spawnChildAndSetupListeners({
-        arguments_: ['-c', 'customShutdownEvent', '100'],
+        arguments_: ['--custom-timeout', '-1000'],
         stdoutExpectation: (data) =>
           assert.fail('Should not have received any output: ' + data),
         stderrExpectation: (data) =>
-          expect(data.toString().trim()).to.equal(
-            'Handled signal: customShutdownEvent',
+          expect(data.toString().trim()).to.match(
+            /Shutdown timeout must be a positive number/,
           ),
-        exitCodeExpectation: 100,
+        exitCodeExpectation: 1,
+      })
+    })
+
+    it('should error when setting a non-numeric shutdown timeout', function () {
+      return spawnChildAndSetupListeners({
+        arguments_: ['--custom-timeout', 'invalid'],
+        stdoutExpectation: (data) =>
+          assert.fail('Should not have received any output: ' + data),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.match(
+            /Shutdown timeout must be a positive number/,
+          ),
+        exitCodeExpectation: 1,
       })
     })
   })
 
-  describe('Handle multi-phase handlers', function () {
-    it('should handle multi-phase handlers correctly', function () {
-      const stderrOutput = []
+  describe('Handle custom events', function () {
+    it('should handle custom events correctly', function () {
+      const customEvent = 'customShutdownEvent'
+      const customEventCode = '100'
       return spawnChildAndSetupListeners({
-        arguments_: ['--multi-phase'],
+        arguments_: ['--custom-event', customEvent, customEventCode],
         stdoutExpectation: (data) =>
-          assert.fail(
-            'Should not have received any output: ' + data.toString(),
+          expect(data.toString().trim()).to.equal(
+            `Handled signal: ${customEvent}`,
           ),
-        stderrExpectation: (data) => stderrOutput.push(data.toString().trim()),
+        stderrExpectation: (data) =>
+          assert.fail('Should not have received any error: ' + data),
+        exitCodeExpectation: Number(customEventCode),
+      })
+    })
+  })
+
+  describe('Handle phase handlers', function () {
+    it('should execute handlers in the correct phase order', function () {
+      const shutdownLog = []
+      return spawnChildAndSetupListeners({
+        arguments_: ['--phase-handling', 'multi-phase'],
+        stdoutExpectation: (data) => {
+          shutdownLog.push(...data.toString().trim().split('\n'))
+        },
+        stderrExpectation: (data) =>
+          assert.fail('Should not have received any error: ' + data),
         exitCodeExpectation: 0,
+      }).then(() => {
+        expect(shutdownLog).to.deep.equal([
+          'Handler for phase 1',
+          'Handler for phase 2',
+          'Handler for phase 3',
+          'Handler for phase 4',
+        ])
+      })
+    })
+
+    it('should execute handlers in the same phase in registration order', function () {
+      const shutdownLog = []
+      return spawnChildAndSetupListeners({
+        arguments_: ['--phase-handling', 'same-phase'],
+        stdoutExpectation: (data) =>
+          shutdownLog.push(...data.toString().trim().split('\n')),
+        stderrExpectation: (data) =>
+          assert.fail('Should not have received any error: ' + data),
+        exitCodeExpectation: 0,
+      }).then(() => {
+        expect(shutdownLog).to.deep.equal([
+          'First handler in phase 1',
+          'Second handler in phase 1',
+        ])
       })
     })
 
