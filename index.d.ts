@@ -1,70 +1,93 @@
-type Handler = (signal: string) => Promise<void> | void
+type Handler = (signal: string | number | Error) => Promise<void> | void
 
-type SignalHandler = {
-  handler: Handler
-  shouldTerminate: boolean
-  listener: () => void
+interface RegisterHandlerOptions {
+  /**
+   * An optional identifier for the handler. A random identifier is generated if not provided.
+   */
+  identifier?: string
+  /**
+   * The phase during which the handler should be executed. Defaults to phase 1.
+   * Cannot be used together with `signal`.
+   */
+  phase?: number
+  /**
+   * The signal to listen for. If specified, registers a signal-specific handler.
+   * Cannot be used together with `phase`.
+   */
+  signal?: string
+  /**
+   * For signal-specific handlers, indicates whether the application should terminate after the handler executes.
+   * Defaults to `true`.
+   */
+  shouldTerminate?: boolean
 }
 
-type Handlers = Record<number, Record<string, Handler>>
-type SignalHandlers = Record<string, SignalHandler>
+interface HandlerEntry {
+  identifier: string
+  type: 'phase' | 'signal'
+  handler: Handler
+  /**
+   * For signal-specific handlers, the signal being listened to.
+   */
+  signal?: string
+  /**
+   * For signal-specific handlers, indicates whether the application should terminate after the handler executes.
+   */
+  shouldTerminate?: boolean
+}
+
+interface PhaseEntry {
+  phaseKey: number | 'signal'
+  handlers: HandlerEntry[]
+}
 
 /**
  * Adds a new signal to be listened for, initiating the shutdown process when received.
  * @param signal The name of the signal to add.
- * @returns `true` if the signal was added successfully, `false` if it was already present.
+ * @returns `true` if the signal was added successfully, `false` if it was already present or has a specific handler.
  * @example
  * addSignal('SIGUSR2');
  */
 export function addSignal(signal: string): boolean
 
 /**
- * Lists all registered handlers, including both shutdown and signal-specific handlers.
- * @returns An object with all registered handlers.
+ * Lists all registered handlers, including both generic (phase) and signal-specific handlers.
+ * @returns An array of phase entries containing handlers.
  * @example
  * const handlers = listHandlers();
  */
-export function listHandlers(): Handlers & SignalHandlers
+export function listHandlers(): PhaseEntry[]
 
 /**
  * Provides a list of all signals currently being listened to by the module.
+ * @param options Optional parameter to include signals from signal-specific handlers.
  * @returns An array of signal names.
  * @example
- * const signals = listSignals();
+ * const signals = listSignals({ includeSignalHandlers: true });
  */
-export function listSignals(): string[]
+export function listSignals(options?: {
+  includeSignalHandlers?: boolean
+}): string[]
 
 /**
- * Registers a shutdown handler to be executed during the shutdown process.
- * Handlers can be assigned to specific phases for ordered execution.
+ * Registers a handler to be executed during the shutdown process or when a specific signal is received.
  * @param handler The handler function to execute, which can be async.
- * @param identifier An optional identifier for the handler. A random identifier is generated if not provided.
- * @param phase The phase during which the handler should be executed. Defaults to phase 1.
+ * @param options Options to configure the handler registration.
+ * @returns The identifier of the registered handler.
  * @example
- * registerHandler(async () => console.log('Cleanup tasks'), 'cleanupHandler', 2);
+ * // Register a generic handler for phase 2
+ * const id = registerHandler(async () => console.log('Cleanup tasks'), { identifier: 'cleanupHandler', phase: 2 });
+ *
+ * // Register a signal-specific handler
+ * const id = registerHandler(async () => console.log('Handling SIGUSR2'), { identifier: 'sigusr2Handler', signal: 'SIGUSR2', shouldTerminate: false });
  */
 export function registerHandler(
   handler: Handler,
-  identifier?: string,
-  phase?: number,
-): void
+  options?: RegisterHandlerOptions,
+): string
 
 /**
- * Registers a signal-specific handler that executes custom logic when the specified signal is received.
- * @param signal The signal to listen for.
- * @param handler The handler function to execute when the signal is received, which can be async.
- * @param shouldTerminate Optional flag indicating whether the application should terminate after the handler executes. Defaults to `true`.
- * @example
- * registerSignalHandler('SIGUSR2', async () => console.log('Handling SIGUSR2'), false);
- */
-export function registerSignalHandler(
-  signal: string,
-  handler: Handler,
-  shouldTerminate?: boolean,
-): void
-
-/**
- * Removes a previously registered shutdown handler by its identifier.
+ * Removes a previously registered handler by its identifier.
  * @param identifier The identifier of the handler to remove.
  * @returns `true` if the handler was successfully removed, `false` otherwise.
  * @example
@@ -80,15 +103,6 @@ export function removeHandler(identifier: string): boolean
  * removeSignal('SIGUSR2');
  */
 export function removeSignal(signal: string): boolean
-
-/**
- * Removes a previously registered signal-specific handler.
- * @param signal The signal whose handler is to be removed.
- * @returns `true` if the handler was successfully removed, `false` otherwise.
- * @example
- * removeSignalHandler('SIGUSR2');
- */
-export function removeSignalHandler(signal: string): boolean
 
 /**
  * Sets a custom exit code for the shutdown process, overriding the default exit code.

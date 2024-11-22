@@ -10,7 +10,7 @@ The `shutdown-cleanup` module provides a structured approach for managing gracef
 
 - **Phased Shutdown:** Organizes shutdown logic into phases for orderly execution.
 - **Signal-Specific Handlers:** Custom logic for specific signals without mandatory shutdown.
-- **Error Handling Strategy:** Customizable handling of handler errors.
+- **Error Handling Strategy:** Customizable handling of handler errors, including proper management of synchronous and asynchronous handlers to prevent unhandled promise rejections.
 - **Custom Exit Codes:** Specify exit codes to indicate shutdown statuses.
 - **Graceful Shutdown with Timeout:** Prevents indefinite hangs during shutdown. (See [Developer Guide](DEVGUIDE.md) for details.)
 - **LTS Node.js Support:** Compatible with LTS Node.js versions.
@@ -31,14 +31,21 @@ yarn add @hypercliq/shutdown-cleanup
 
 ## Usage
 
-To use `shutdown-cleanup`, import and utilize its functions within your application to manage shutdown logic effectively.
+To use `shutdown-cleanup`, import and utilize its functions within your application to manage shutdown logic effectively. **Both synchronous and asynchronous handlers are supported.**
 
 ```js
 import { registerHandler } from '@hypercliq/shutdown-cleanup'
 
+// Asynchronous handler
 registerHandler(async (signal) => {
   await performCleanup()
-  console.log('Cleanup completed')
+  console.log('Async cleanup completed')
+})
+
+// Synchronous handler
+registerHandler((signal) => {
+  performSyncCleanup()
+  console.log('Sync cleanup completed')
 })
 ```
 
@@ -63,7 +70,7 @@ Thank you for using and contributing to the `shutdown-cleanup` module!
 7. Wait for review and merge
 8. Celebrate your contribution!
 
-Remember to add tests for your changes and ensure that all tests pass before submitting a pull request. Also lint and format your code according to the project's standards.
+Remember to add tests for your changes and ensure that all tests pass before submitting a pull request. Also, lint and format your code according to the project's standards.
 
 ## License
 
