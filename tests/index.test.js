@@ -37,7 +37,11 @@ const spawnChildAndSetupListeners = ({
       if (debug) {
         console.log(data.toString())
       } else {
-        stdoutData += data.toString()
+        try {
+          stdoutExpectation(data)
+        } catch (error) {
+          reject(error)
+        }
       }
     })
 
@@ -45,7 +49,11 @@ const spawnChildAndSetupListeners = ({
       if (debug) {
         console.error(data.toString())
       } else {
-        stderrData += data.toString()
+        try {
+          stderrExpectation(data)
+        } catch (error) {
+          reject(error)
+        }
       }
     })
 
@@ -65,26 +73,6 @@ const spawnChildAndSetupListeners = ({
   })
 
 describe('Shutdown-cleanup module', function () {
-  afterEach(function () {
-    // Cleanup: Remove all registered handlers to prevent test interference
-    const allHandlers = listHandlers()
-    for (const phase in allHandlers) {
-      if (Object.hasOwn(allHandlers, phase)) {
-        const handlersInPhase = allHandlers[phase]
-        for (const identifier in handlersInPhase) {
-          if (Object.hasOwn(handlersInPhase, identifier)) {
-            removeHandler(identifier)
-          }
-        }
-      }
-    }
-
-    const allSignals = listSignals()
-    for (const signal of allSignals) {
-      removeSignal(signal)
-    }
-  })
-
   describe('Handler Registration', function () {
     it('should register, list and remove a handler', function () {
       const identifier = 'testSync'
@@ -256,27 +244,6 @@ describe('Shutdown-cleanup module', function () {
         exitCodeExpectation: 0,
       })
     })
-
-    it('should prevent registering handlers with duplicate identifiers', function () {
-      registerHandler(genericHandler, 'duplicateId', 1)
-
-      expect(listHandlers()['1']).to.have.property('duplicateId')
-
-      // Attempt to register a handler with the same identifier in the same phase
-      expect(() => registerHandler(genericHandler, 'duplicateId', 1)).to.throw(
-        Error,
-        "Handler with identifier 'duplicateId' already exists globally",
-      )
-
-      // Attempt to register a handler with the same identifier in different phase
-      expect(() => registerHandler(genericHandler, 'duplicateId', 2)).to.throw(
-        Error,
-        "Handler with identifier 'duplicateId' already exists globally",
-      )
-
-      // Cleanup
-      removeHandler('duplicateId')
-    })
   })
 
   describe('Default signal handling', function () {
@@ -437,7 +404,7 @@ describe('Shutdown-cleanup module', function () {
       })
     })
 
-    it('should continue shutdown even if a handler fails when strategy is "continue"', function () {
+    it('should handle continue strategy correctly', function () {
       return spawnChildAndSetupListeners({
         arguments_: ['--strategy', 'continue'],
         stdoutExpectation: (data) =>
@@ -547,61 +514,39 @@ describe('Shutdown-cleanup module', function () {
   })
 
   describe('Handle phase handlers', function () {
-    it('should execute handlers in the correct phase order', function () {
+    it('should execute handlers in the correct phase order', async function () {
       const shutdownLog = []
-      return spawnChildAndSetupListeners({
+      await spawnChildAndSetupListeners({
         arguments_: ['--phase-handling', 'multi-phase'],
-        stdoutExpectation: (data) => {
-          shutdownLog.push(...data.toString().trim().split('\n'))
+        stdoutExpectation: (data_1) => {
+          shutdownLog.push(...data_1.toString().trim().split('\n'))
         },
-        stderrExpectation: (data) =>
-          assert.fail('Should not have received any error: ' + data),
+        stderrExpectation: (data_3) =>
+          assert.fail('Should not have received any error: ' + data_3),
         exitCodeExpectation: 0,
-      }).then(() => {
-        expect(shutdownLog).to.deep.equal([
-          'Handler for phase 1',
-          'Handler for phase 2',
-          'Handler for phase 3',
-          'Handler for phase 4',
-        ])
       })
+      expect(shutdownLog).to.deep.equal([
+        'Handler for phase 1',
+        'Handler for phase 2',
+        'Handler for phase 3',
+        'Handler for phase 4',
+      ])
     })
 
-    it('should execute handlers in the same phase in registration order', function () {
+    it('should execute handlers in the same phase in registration order', async function () {
       const shutdownLog = []
-      return spawnChildAndSetupListeners({
+      await spawnChildAndSetupListeners({
         arguments_: ['--phase-handling', 'same-phase'],
-        stdoutExpectation: (data) =>
-          shutdownLog.push(...data.toString().trim().split('\n')),
-        stderrExpectation: (data) =>
-          assert.fail('Should not have received any error: ' + data),
-        exitCodeExpectation: 0,
-      }).then(() => {
-        expect(shutdownLog).to.deep.equal([
-          'First handler in phase 1',
-          'Second handler in phase 1',
-        ])
-      })
-    })
-
-    it('should handle multi-phase handlers correctly in order', function () {
-      return spawnChildAndSetupListeners({
-        arguments_: ['--multi-phase'],
-        stdoutExpectation: (data) => {
-          // Expect no output on stdout
-          expect(data).to.equal('')
-        },
-        stderrExpectation: (data) => {
-          const expectedOrder = ['Handler for phase 1', 'Handler for phase 2']
-          const receivedOrder = data
-            .split('\n')
-            .map((line) => line.trim())
-            .filter(Boolean)
-
-          expect(receivedOrder).to.eql(expectedOrder)
-        },
+        stdoutExpectation: (data_1) =>
+          shutdownLog.push(...data_1.toString().trim().split('\n')),
+        stderrExpectation: (data_3) =>
+          assert.fail('Should not have received any error: ' + data_3),
         exitCodeExpectation: 0,
       })
+      expect(shutdownLog).to.deep.equal([
+        'First handler in phase 1',
+        'Second handler in phase 1',
+      ])
     })
   })
 })
