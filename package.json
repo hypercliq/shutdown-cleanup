@@ -1,6 +1,6 @@
 {
   "name": "@hypercliq/shutdown-cleanup",
-  "version": "7.0.1",
+  "version": "8.0.0",
   "description": "Module to handle graceful shutdowns",
   "type": "module",
   "exports": {
