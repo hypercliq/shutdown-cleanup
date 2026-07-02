@@ -1,6 +1,6 @@
-type Handler = (signal: string | number | Error) => Promise<void> | void
+export type Handler = (signal: string | number | Error) => Promise<void> | void
 
-interface RegisterHandlerOptions {
+export interface RegisterHandlerOptions {
   /**
    * An optional identifier for the handler. A random identifier is generated if not provided.
    */
@@ -22,7 +22,7 @@ interface RegisterHandlerOptions {
   shouldTerminate?: boolean
 }
 
-interface HandlerEntry {
+export interface HandlerEntry {
   identifier: string
   type: 'phase' | 'signal'
   handler: Handler
@@ -36,7 +36,7 @@ interface HandlerEntry {
   shouldTerminate?: boolean
 }
 
-interface PhaseEntry {
+export interface PhaseEntry {
   phaseKey: number | 'signal'
   handlers: HandlerEntry[]
 }
