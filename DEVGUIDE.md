@@ -1,282 +1,419 @@
 # Developer Guide
 
-This developer guide provides in-depth documentation on how to use the `shutdown-cleanup` module effectively in your Node.js applications, covering best practices, detailed examples, advanced usage scenarios, and guidance on migrating from earlier versions.
+This guide covers practical use of `@hypercliq/shutdown-cleanup` in Node.js applications. For a short overview and installation instructions, see the [project homepage](https://hypercliq.github.io/shutdown-cleanup/).
 
-## Introduction
+## What This Module Does
 
-The `shutdown-cleanup` module offers a structured approach to gracefully handle shutdown processes in Node.js applications. It supports:
+`shutdown-cleanup` installs process listeners and runs your cleanup handlers before the process exits. It is designed for work such as closing HTTP servers, flushing logs, stopping queues, disconnecting databases, and releasing other external resources.
 
-- **Phased Shutdowns**: Organize cleanup tasks into phases for orderly execution.
-- **Signal-Specific Handlers**: Define custom logic for specific signals without mandatory shutdown.
-- **Custom Error Handling**: Choose how the module handles errors in your handlers.
-- **Custom Exit Codes**: Specify exit codes to indicate shutdown statuses.
-- **Support for Both Synchronous and Asynchronous Handlers**: Flexibility in how you write your handlers.
-- **TypeScript Support**: Includes type definitions for better development experience.
+The module supports:
 
-## Default Signal Handling and Customization
+- Phased shutdown handlers that run in predictable order.
+- Signal-specific handlers for custom behavior on one signal or process event.
+- Synchronous and asynchronous handlers.
+- Configurable error handling.
+- A shutdown timeout to avoid hanging forever.
+- TypeScript declarations.
 
-By default, the module listens to common signals (`SIGINT`, `SIGTERM`, `SIGHUP`, and `beforeExit`) to initiate the shutdown process. You can customize this behavior as needed.
+The package is ESM-only and supports Node.js 18 and newer.
 
-### Adding and Removing Signals
+## Quick Start
 
-Customize your application's response to system signals by adding or removing them:
+Register cleanup work with `registerHandler`. Handlers run when one of the default shutdown signals is received.
+
+```js
+import { registerHandler } from '@hypercliq/shutdown-cleanup'
+
+registerHandler(async (signal) => {
+  console.log(`Shutting down after ${signal}`)
+  await server.close()
+  await database.disconnect()
+})
+```
+
+By default, the module listens for:
+
+- `SIGTERM`
+- `SIGINT`
+- `SIGHUP`
+- `beforeExit`
+
+The handler argument is the value emitted by Node.js for the signal or event. For POSIX signals, this is usually the signal name. For `beforeExit`, it is the process exit code.
+
+## Phased Shutdown
+
+Handlers are grouped by phase. Lower numbered phases run first. Handlers in the same phase run in registration order. If no phase is provided, phase `1` is used.
+
+```js
+import { registerHandler } from '@hypercliq/shutdown-cleanup'
+
+registerHandler(
+  async () => {
+    await server.close()
+  },
+  {
+    identifier: 'closeServer',
+    phase: 1,
+  },
+)
+
+registerHandler(
+  async () => {
+    await database.disconnect()
+  },
+  {
+    identifier: 'disconnectDatabase',
+    phase: 2,
+  },
+)
+```
+
+Use phases when one cleanup step depends on another. For example, stop accepting requests before disconnecting the database.
+
+## Signal-Specific Handlers
+
+Signal-specific handlers let you attach behavior to a single signal or process event.
+
+```js
+import { registerHandler } from '@hypercliq/shutdown-cleanup'
+
+registerHandler(
+  async () => {
+    console.log('Received SIGUSR1')
+  },
+  {
+    identifier: 'debugSignal',
+    signal: 'SIGUSR1',
+    shouldTerminate: false,
+  },
+)
+```
+
+When `shouldTerminate` is `false`, the handler runs and the process stays alive. When `shouldTerminate` is omitted or `true`, the signal-specific handler runs first, then the normal phased shutdown runs.
+
+If you register a signal-specific handler for a default signal such as `SIGTERM`, the default listener is replaced for that signal. Removing the handler restores the default listener.
+
+## Custom Events
+
+You can also listen for custom process events by using the event name as `signal`.
+
+```js
+import { registerHandler } from '@hypercliq/shutdown-cleanup'
+
+const eventName = 'app:shutdown'
+
+registerHandler(
+  async (exitCode) => {
+    console.log(`Received ${eventName}`)
+    console.log(`Requested exit code: ${exitCode}`)
+  },
+  {
+    identifier: 'applicationShutdown',
+    signal: eventName,
+  },
+)
+
+process.emit(eventName, 0)
+```
+
+Node passes emitted event arguments to listeners. The first emitted argument becomes the handler argument and, when `shouldTerminate` is `true`, is also used to determine the exit code. Passing a number is the clearest way to control the exit code for custom events.
+
+If you need the event name inside the handler, close over it as shown above.
+
+## Managing Signals
+
+Use `addSignal` to make another signal or event trigger phased shutdown.
 
 ```js
 import { addSignal, removeSignal } from '@hypercliq/shutdown-cleanup'
 
-addSignal('SIGUSR1')
+addSignal('SIGUSR2')
 removeSignal('SIGHUP')
 ```
 
-### Signal-Specific Handlers
+`SIGKILL` and `SIGSTOP` cannot be handled and will throw if you try to add or register them.
 
-Gain flexibility by registering handlers for specific signals or events, allowing for custom logic without necessitating a shutdown:
+`beforeExit` is already registered by default. You do not need to add it unless you previously removed it.
 
-```js
-import { registerHandler } from '@hypercliq/shutdown-cleanup'
+## Error Handling
 
-registerHandler(
-  async (signal) => {
-    console.log('Custom logic for SIGUSR1')
-  },
-  {
-    signal: 'SIGUSR1',
-    shouldTerminate: false, // false indicates that the application should not terminate
-  },
-)
-```
-
-## Handler Functions: Best Practices
-
-**Both synchronous and asynchronous functions** are accepted as handlers. The module has taken careful steps to ensure that asynchronous handlers are handled properly, mitigating the potential issues warned about in the Node.js documentation.
-
-### Handling Asynchronous Handlers Safely
-
-#### Node.js Warning on Async Event Handlers
-
-The Node.js documentation cautions against using `async` functions directly as event handlers because unhandled promise rejections can occur if errors are not properly caught. This can lead to warnings or even cause the process to crash in certain Node.js versions.
-
-#### Our Module's Mitigation
-
-The `shutdown-cleanup` module internally wraps the execution of your handlers to catch both synchronous exceptions and promise rejections. This ensures that even if your asynchronous handler throws an error or returns a rejected promise, the module will handle it appropriately, preventing unhandled promise rejections.
-
-#### What This Means for You
-
-- **You Can Safely Use Async Handlers**: Feel free to define your handlers as `async` functions. The module has you covered.
-- **Error Handling**: It's still good practice to handle errors within your handlers for clarity and to manage specific error scenarios.
-- **Consistency**: Write your handlers in the way that makes the most sense for your application logic.
-
-### Examples
-
-**Asynchronous Handler:**
-
-```javascript
-import { registerHandler } from '@hypercliq/shutdown-cleanup'
-
-registerHandler(async (signal) => {
-  await performAsyncCleanup()
-  console.log('Asynchronous cleanup completed')
-})
-```
-
-**Synchronous Handler:**
-
-```javascript
-import { registerHandler } from '@hypercliq/shutdown-cleanup'
-
-registerHandler((signal) => {
-  performSyncCleanup()
-  console.log('Synchronous cleanup completed')
-})
-```
-
-### Best Practices for Handlers
-
-- **Handle Errors Appropriately**: While the module catches unhandled rejections, it's best to handle errors within your handlers for clarity and to manage specific error scenarios.
-- **Keep Handlers Efficient**: Ensure your handlers complete their tasks promptly to avoid delaying the shutdown process.
-- **Avoid Blocking Operations**: Especially in synchronous handlers, avoid operations that might block the event loop for extended periods.
-
-## Advanced Configuration
-
-### Error Handling Strategies
-
-Set how the module handles errors occurring in your handlers using `setErrorHandlingStrategy`:
-
-- `'continue'` (default): Continues executing remaining handlers even if an error occurs.
-- `'stop'`: Stops executing remaining handlers if an error occurs.
+The default strategy is `continue`. If a phased shutdown handler throws or rejects, the error is logged and the remaining handlers continue.
 
 ```js
 import { setErrorHandlingStrategy } from '@hypercliq/shutdown-cleanup'
 
+setErrorHandlingStrategy('continue')
+```
+
+Use `stop` when a failed cleanup step should prevent later handlers from running.
+
+```js
 setErrorHandlingStrategy('stop')
 ```
 
-### Shutdown Timeout
+With `stop`, the process exits immediately with the custom exit code if one was set, otherwise `1`.
 
-Set a timeout for the shutdown process with `setShutdownTimeout`, ensuring the application doesn't hang indefinitely:
+Signal-specific handler errors follow the same strategy. Under `continue`, a terminating signal-specific handler still proceeds into the normal phased shutdown after logging the error.
+
+## Shutdown Timeout
+
+The shutdown timeout protects against asynchronous handlers that never settle.
 
 ```js
 import { setShutdownTimeout } from '@hypercliq/shutdown-cleanup'
 
-setShutdownTimeout(20000) // 20 seconds - default is 30 seconds
+setShutdownTimeout(20_000)
 ```
 
-### Custom Exit Codes
+The default timeout is 30 seconds. The value must be a positive finite number of milliseconds.
 
-Specify a custom exit code to be used when the application exits after the shutdown process:
+The timeout cannot interrupt CPU-bound synchronous work that blocks the event loop. Keep synchronous handlers short.
+
+## Custom Exit Codes
+
+Use `setCustomExitCode` to override the exit code used after shutdown.
 
 ```js
 import { setCustomExitCode } from '@hypercliq/shutdown-cleanup'
 
-setCustomExitCode(42)
+setCustomExitCode(0)
 ```
 
-## Examples
+Without a custom exit code:
 
-### Basic Shutdown Sequence
+- Numeric signal values are used as-is.
+- `Error` values use `error.errno` when present.
+- POSIX signal names use Node's signal number from `os.constants.signals`.
+- Unknown values fall back to `1`.
 
-A simple setup for managing a graceful shutdown:
+The custom exit code must be an integer.
 
-```javascript
-import { registerHandler } from '@hypercliq/shutdown-cleanup'
+## Inspecting and Removing Handlers
 
-registerHandler(async (signal) => {
-  await performAsyncCleanup()
-  console.log('Cleanup resources')
+Use explicit identifiers when you expect to inspect or remove handlers later.
+
+```js
+import { listHandlers, removeHandler } from '@hypercliq/shutdown-cleanup'
+
+const identifier = registerHandler(cleanup, {
+  identifier: 'cleanup',
 })
+
+console.log(listHandlers())
+removeHandler(identifier)
 ```
 
-### Advanced Shutdown Sequence
+Generated identifiers are returned from `registerHandler`, but named identifiers make logs and debugging easier.
 
-A comprehensive example demonstrating how to set up a phased graceful shutdown sequence with custom signal handling:
+## API Reference
+
+### `registerHandler(handler, options?)`
+
+Registers a phased shutdown handler or a signal-specific handler.
+
+```ts
+registerHandler(handler: Handler, options?: RegisterHandlerOptions): string
+```
+
+Options:
+
+- `identifier?: string`: Unique handler identifier. A random identifier is generated when omitted.
+- `phase?: number`: Positive integer phase for phased shutdown handlers. Defaults to `1`.
+- `signal?: string`: Signal or event name for a signal-specific handler.
+- `shouldTerminate?: boolean`: For signal-specific handlers, controls whether phased shutdown runs after the handler. Defaults to `true`.
+
+Rules:
+
+- `handler` must be a function.
+- `phase` and `signal` cannot be used together.
+- `phase` must be a positive integer.
+- `identifier` must be unique across all handlers.
+- Only one signal-specific handler can be registered for a given signal.
+- `SIGKILL` and `SIGSTOP` cannot be handled.
+
+Returns the handler identifier.
+
+### `removeHandler(identifier)`
+
+Removes a registered handler by identifier.
+
+```ts
+removeHandler(identifier: string): boolean
+```
+
+Returns `true` when a handler was removed, otherwise `false`.
+
+### `listHandlers()`
+
+Lists all registered phased and signal-specific handlers.
+
+```ts
+listHandlers(): PhaseEntry[]
+```
+
+The signal-specific group is reported with `phaseKey: 'signal'`.
+
+### `addSignal(signal)`
+
+Adds a signal or process event that should trigger phased shutdown.
+
+```ts
+addSignal(signal: string): boolean
+```
+
+Returns `true` when the signal was added. Returns `false` if it was already registered or already has a signal-specific handler.
+
+### `removeSignal(signal)`
+
+Removes a signal from the set of signals that trigger phased shutdown.
+
+```ts
+removeSignal(signal: string): boolean
+```
+
+Returns `true` when the signal was removed, otherwise `false`.
+
+### `listSignals(options?)`
+
+Lists signals that currently trigger shutdown.
+
+```ts
+listSignals(options?: { includeSignalHandlers?: boolean }): string[]
+```
+
+Set `includeSignalHandlers: true` to include signals that are handled by signal-specific handlers.
+
+### `setErrorHandlingStrategy(strategy)`
+
+Configures handler error behavior.
+
+```ts
+setErrorHandlingStrategy(strategy: 'continue' | 'stop'): void
+```
+
+The default strategy is `continue`.
+
+### `setShutdownTimeout(timeout)`
+
+Sets the maximum time allowed for phased shutdown.
+
+```ts
+setShutdownTimeout(timeout: number): void
+```
+
+The timeout must be a positive finite number of milliseconds.
+
+### `setCustomExitCode(code)`
+
+Sets the process exit code used after shutdown.
+
+```ts
+setCustomExitCode(code: number): void
+```
+
+The exit code must be an integer.
+
+## TypeScript
+
+The package includes TypeScript declarations and exports these types:
+
+```ts
+import type {
+  Handler,
+  HandlerEntry,
+  PhaseEntry,
+  RegisterHandlerOptions,
+} from '@hypercliq/shutdown-cleanup'
+```
+
+`Handler` is typed as:
+
+```ts
+type Handler = (signal: string | number | Error) => Promise<void> | void
+```
+
+## Complete Example
 
 ```js
 import {
-  addSignal,
   registerHandler,
-  setErrorHandlingStrategy,
   setCustomExitCode,
+  setErrorHandlingStrategy,
+  setShutdownTimeout,
 } from '@hypercliq/shutdown-cleanup'
 
-// Register a phased shutdown handler to be executed in the default phase (phase 1)
-registerHandler(
-  async (signal) => {
-    await releaseResources()
-    console.log('Phase 1: Release resources')
-  },
-  {
-    identifier: 'releaseResources', // Specify a unique identifier for the handler
-  },
-)
-
-// Register a handler to be executed in phase 2
-registerHandler(
-  async (signal) => {
-    await closeConnections()
-    console.log('Phase 2: Close connections')
-  },
-  {
-    identifier: 'closeConnections',
-    phase: 2, // Specify the phase number
-  },
-)
-
-// Add an extra lifecycle event to listen to; phased shutdown handlers will be executed for this event
-addSignal('beforeExit')
-
-// Register a signal-specific handler for SIGUSR1 that does not terminate the application
-registerHandler(
-  async (signal) => {
-    console.log(`Handling ${signal} for debugging purposes`)
-  },
-  {
-    signal: 'SIGUSR1',
-    shouldTerminate: false, // The application will not terminate after this handler
-  },
-)
-
-// Register a signal-specific handler for a custom signal raised somewhere in the application
-registerHandler(
-  async (signal) => {
-    console.log(`Handling custom signal: ${signal}`)
-  },
-  {
-    signal: 'customSignal', // Custom signal or event name
-    shouldTerminate: true, // The application will terminate after this handler
-  },
-)
-
-// Set the error handling strategy to 'continue'
+setShutdownTimeout(20_000)
 setErrorHandlingStrategy('continue')
+setCustomExitCode(0)
 
-// Set a custom exit code
-setCustomExitCode(42)
+registerHandler(
+  async () => {
+    await server.close()
+  },
+  {
+    identifier: 'closeServer',
+    phase: 1,
+  },
+)
+
+registerHandler(
+  async () => {
+    await database.disconnect()
+  },
+  {
+    identifier: 'disconnectDatabase',
+    phase: 2,
+  },
+)
 ```
 
-## Migration Guide
+## Migration From Older Versions
 
-If you are upgrading from a previous version of the `shutdown-cleanup` module, this section will help you migrate your code to the latest version.
+Version 7 unified the old phase and signal registration APIs behind `registerHandler`.
 
-### Key Changes in the Latest Version
+Old phase handler style:
 
-1. **Unified `registerHandler` Function**: The functions `registerSignalHandler` and `registerPhaseHandler` have been unified into a single `registerHandler` function with options.
-
-2. **Support for Both Synchronous and Asynchronous Handlers**: The module now accepts both synchronous and asynchronous handler functions.
-
-3. **Improved Error Handling**: The module has enhanced error handling internally to catch both synchronous exceptions and promise rejections in handlers.
-
-4. **TypeScript Definitions Updated**: Type definitions have been updated to reflect the new API.
-
-### Migration Steps
-
-#### 1. Update Handler Registration
-
-**Before (Old Version):**
-
-```javascript
-import {
-  registerHandler,
-  registerSignalHandler,
-} from '@hypercliq/shutdown-cleanup'
-
-// Registering a phase handler
+```js
 registerHandler(
-  async (signal) => {
-    await performCleanup()
+  async () => {
+    await cleanup()
   },
   'cleanupHandler',
   1,
 )
-
-// Registering a signal-specific handler
-registerSignalHandler(
-  'SIGUSR1',
-  async (signal) => {
-    console.log('Handling SIGUSR1')
-  },
-  false,
-)
 ```
 
-**After (New Version):**
+New phase handler style:
 
-```javascript
-import { registerHandler } from '@hypercliq/shutdown-cleanup'
-
-// Registering a phase handler
+```js
 registerHandler(
-  async (signal) => {
-    await performCleanup()
+  async () => {
+    await cleanup()
   },
   {
     identifier: 'cleanupHandler',
     phase: 1,
   },
 )
+```
 
-// Registering a signal-specific handler
+Old signal handler style:
+
+```js
+registerSignalHandler(
+  'SIGUSR1',
+  async () => {
+    console.log('Handling SIGUSR1')
+  },
+  false,
+)
+```
+
+New signal handler style:
+
+```js
 registerHandler(
-  async (signal) => {
+  async () => {
     console.log('Handling SIGUSR1')
   },
   {
@@ -286,123 +423,13 @@ registerHandler(
 )
 ```
 
-- **What's Changed**: Instead of separate functions, you now use `registerHandler` with an options object to specify `identifier`, `phase`, `signal`, and `shouldTerminate`.
+If you were importing `registerSignalHandler` or `registerPhaseHandler`, replace those imports with `registerHandler` and pass an options object.
 
-#### 2. Remove Deprecated Functions
+## Operational Notes
 
-- **Removed Functions**: If you were using `registerSignalHandler` or `registerPhaseHandler`, replace them with `registerHandler` as shown above.
-- **Example**:
-
-  ```javascript
-  // Remove or replace calls to registerSignalHandler and registerPhaseHandler
-  ```
-
-#### 3. Adjust Error Handling Strategy
-
-- If you were relying on default error handling behavior, review the new `setErrorHandlingStrategy` function to ensure it aligns with your application's needs.
-
-#### 4. Verify Handlers
-
-- **Synchronous Handlers**: If you had synchronous handlers, they will continue to work as before.
-- **Asynchronous Handlers**: You can now safely use `async` functions as handlers without additional wrapping.
-
-#### 5. Update TypeScript Imports (If Applicable)
-
-- **Type Definitions**: Update your imports to ensure you are using the latest types.
-
-  ```typescript
-  import { Handler, RegisterHandlerOptions } from '@hypercliq/shutdown-cleanup'
-  ```
-
-#### 6. Test Thoroughly
-
-- After making changes, test your application thoroughly to ensure that shutdown sequences execute as expected.
-
-### Example Migration
-
-**Before Migration:**
-
-```javascript
-import {
-  registerHandler,
-  registerSignalHandler,
-} from '@hypercliq/shutdown-cleanup'
-
-// Phase handler
-registerHandler(
-  async (signal) => {
-    await cleanUpResources()
-  },
-  'resourceCleanup',
-  1,
-)
-
-// Signal-specific handler
-registerSignalHandler(
-  'SIGUSR2',
-  async (signal) => {
-    console.log('Received SIGUSR2')
-  },
-  true,
-)
-```
-
-**After Migration:**
-
-```javascript
-import { registerHandler } from '@hypercliq/shutdown-cleanup'
-
-// Phase handler
-registerHandler(
-  async (signal) => {
-    await cleanUpResources()
-  },
-  {
-    identifier: 'resourceCleanup',
-    phase: 1,
-  },
-)
-
-// Signal-specific handler
-registerHandler(
-  async (signal) => {
-    console.log('Received SIGUSR2')
-  },
-  {
-    signal: 'SIGUSR2',
-    shouldTerminate: true,
-  },
-)
-```
-
-## API Reference
-
-This section provides a detailed overview of the functions available in the `shutdown-cleanup` module, allowing for effective management of your application's shutdown process.
-
-_(The API Reference remains the same as detailed in the earlier sections.)_
-
-## Type Definitions
-
-For TypeScript users, the module includes type definitions to enhance development experience.
-
-_(Type Definitions remain the same as detailed in the earlier sections.)_
-
-## Additional Tips and Best Practices
-
-- **Async Handlers Are Supported and Handled Safely**: Thanks to internal mechanisms, the module ensures that any errors or promise rejections in your async handlers are properly caught and handled, preventing unhandled promise rejections.
-
-- **Error Handling in Handlers**: While the module handles errors internally, it's still good practice to handle errors within your handlers to manage specific scenarios and maintain clarity in your code.
-
-- **Unique Identifiers**: Use unique identifiers for your handlers to easily manage them, especially when removing handlers or debugging.
-
-- **Phase Numbers**: Assign appropriate phase numbers to ensure handlers execute in the desired order.
-
-- **Signal Management**: Be cautious when adding or removing signals to prevent unintended behavior.
-
-- **Testing Handlers**: Test your handlers thoroughly to ensure they behave as expected during the shutdown process.
-
-- **Avoid Long-Running Operations in Handlers**: If possible, avoid very long-running operations in your handlers to ensure a timely shutdown.
-
-## Conclusion
-
-The `shutdown-cleanup` module provides a robust and flexible solution for managing graceful shutdowns in Node.js applications. By following the best practices outlined in this guide and leveraging the advanced features of the module, you can ensure that your application gracefully handles shutdowns, even in complex scenarios.
+- Register cleanup handlers during application startup.
+- Keep handlers idempotent where possible. A second signal received during shutdown is ignored.
+- Prefer asynchronous I/O cleanup over long synchronous work.
+- Avoid calling `process.exit()` inside handlers unless you intentionally want to bypass later cleanup.
+- Use explicit handler identifiers in production services so logs are meaningful.
+- Test shutdown behavior with the same signals your process manager sends, usually `SIGTERM`.
