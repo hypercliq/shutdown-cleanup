@@ -1,6 +1,5 @@
 import globals from 'globals'
 import pluginJs from '@eslint/js'
-import mochaPlugin from 'eslint-plugin-mocha'
 import eslintPluginUnicorn from 'eslint-plugin-unicorn'
 
 /** @type {import('eslint').Linter.Config[]} */
@@ -15,5 +14,4 @@ export default [
     },
   },
   eslintPluginUnicorn.configs['recommended'],
-  mochaPlugin.configs.recommended,
 ]
