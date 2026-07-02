@@ -445,9 +445,9 @@ describe('Shutdown-cleanup module', function () {
       })
     })
 
-    it('should handle stop strategy correctly', function () {
+    it('should handle stop strategy correctly', async function () {
       const stderrOutput = []
-      return spawnChildAndSetupListeners({
+      await spawnChildAndSetupListeners({
         arguments_: ['--strategy', 'stop'],
         stdoutExpectation: (data) =>
           assert.fail('Should not have received any output: ' + data),
@@ -456,6 +456,10 @@ describe('Shutdown-cleanup module', function () {
         },
         exitCodeExpectation: 1,
       })
+      expect(stderrOutput).to.have.lengthOf.above(0)
+      expect(stderrOutput.join('\n')).to.include(
+        'Stopping shutdown process due to error in handler.',
+      )
     })
   })
 
