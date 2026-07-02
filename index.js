@@ -282,14 +282,14 @@ const listSignals = ({ includeSignalHandlers = false } = {}) => {
 
 const DEFAULT_EXIT_CODE = 1
 
-const getExitCode = (signal) => {
+const getExitCode = (value) => {
   let code
-  if (Number.isSafeInteger(signal)) {
-    code = signal
-  } else if (signal instanceof Error) {
-    code = signal.errno
+  if (Number.isSafeInteger(value)) {
+    code = value
+  } else if (value instanceof Error) {
+    code = value.errno
   } else {
-    code = os.constants.signals[signal]
+    code = os.constants.signals[value]
   }
 
   return code ?? DEFAULT_EXIT_CODE
