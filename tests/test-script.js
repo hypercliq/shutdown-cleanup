@@ -55,15 +55,18 @@ const handleHandlerRegistration = (action, parameters) => {
         const signal = parameters[1]
         const includeSignalHandlers = parameters[2] ?? false
 
-        results.identifier = signal
-          ? registerHandler(() => {}, {
-              identifier,
-              signal,
-              shouldTerminate: true,
-            })
-          : registerHandler(() => {}, {
-              identifier,
-            })
+        results.identifier = registerHandler(
+          () => {},
+          signal
+            ? {
+                identifier,
+                signal,
+                shouldTerminate: true,
+              }
+            : {
+                identifier,
+              },
+        )
 
         results.listBefore = listHandlers()
         results.signalsBefore = listSignals({
@@ -115,8 +118,10 @@ const handleHandlerRegistration = (action, parameters) => {
 
     case 'with-invalid-phase': {
       // try {
+      const phase = parameters[0] === 'fractional' ? 1.5 : 0
+
       registerHandler(() => {}, {
-        phase: 0,
+        phase,
       })
       // } catch (error) {
       //   console.error(error.message)
@@ -307,6 +312,7 @@ switch (flag) {
   case '--strategy': {
     {
       const strategy = rest[0]
+      const scenario = rest[1]
 
       // try {
       setErrorHandlingStrategy(strategy)
@@ -315,23 +321,44 @@ switch (flag) {
       //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
       // }
 
-      registerHandler(
-        () => {
-          throw new Error('Something went wrong')
-        },
-        {
-          identifier: 'failingHandler',
-        },
-      )
-      registerHandler(
-        () => {
-          console.log('Handler for succeed')
-        },
-        {
-          identifier: 'succeedingHandler',
-          phase: 2,
-        },
-      )
+      if (scenario === 'signal-handler') {
+        registerHandler(
+          () => {
+            throw new Error('Something went wrong')
+          },
+          {
+            identifier: 'failingSignalHandler',
+            signal: 'SIGTERM',
+          },
+        )
+        registerHandler(
+          () => {
+            console.log('Handler after failed signal-specific handler')
+          },
+          {
+            identifier: 'handlerAfterFailedSignalHandler',
+          },
+        )
+        process.kill(process.pid, 'SIGTERM')
+      } else {
+        registerHandler(
+          () => {
+            throw new Error('Something went wrong')
+          },
+          {
+            identifier: 'failingHandler',
+          },
+        )
+        registerHandler(
+          () => {
+            console.log('Handler for succeed')
+          },
+          {
+            identifier: 'succeedingHandler',
+            phase: 2,
+          },
+        )
+      }
     }
 
     break
@@ -340,7 +367,8 @@ switch (flag) {
   case '--custom-timeout': {
     {
       const timeout = rest[0]
-      setShutdownTimeout(Number(timeout))
+      const timeoutValue = rest[1] === 'raw' ? timeout : Number(timeout)
+      setShutdownTimeout(timeoutValue)
 
       // Register a handler that takes longer than the timeout
       registerHandler(
@@ -359,8 +387,9 @@ switch (flag) {
   case '--custom-exit-code': {
     {
       const exitCode = rest[0]
+      const exitCodeValue = rest[1] === 'raw' ? exitCode : Number(exitCode)
       // try {
-      setCustomExitCode(Number(exitCode))
+      setCustomExitCode(exitCodeValue)
       registerHandler(async () => {
         console.log('Handler for exit')
       })

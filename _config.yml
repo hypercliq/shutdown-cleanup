@@ -1,6 +1,22 @@
 title: Shutdown-Cleanup
-description: NodeJS module to gracefully shutdown an application
+description: Node.js module to gracefully shut down an application
 logo: logo-io.png
 remote_theme: pages-themes/minimal@v0.2.0
 plugins:
   - jekyll-remote-theme
+exclude:
+  - .commitlintrc.json
+  - .github/
+  - .gitignore
+  - .husky/
+  - .lintstagedrc.json
+  - .nvmrc
+  - coverage/
+  - eslint.config.js
+  - index.d.ts
+  - index.js
+  - node_modules/
+  - package-lock.json
+  - package.json
+  - prettier.config.js
+  - tests/

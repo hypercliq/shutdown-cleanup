@@ -1,7 +1,7 @@
 {
   "name": "@hypercliq/shutdown-cleanup",
-  "version": "7.0.1",
-  "description": "Module to handle graceful shutdowns",
+  "version": "8.0.0",
+  "description": "Phased graceful shutdown for Node.js — signal handlers, async cleanup, configurable error strategy",
   "type": "module",
   "exports": {
     "types": "./index.d.ts",
@@ -12,11 +12,11 @@
     "index.d.ts"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "scripts": {
-    "test": "mocha",
-    "test:coverage": "c8 --reporter=html --reporter=text-summary mocha",
+    "test": "node --test tests/index.test.js",
+    "test:coverage": "c8 --reporter=html --reporter=text-summary node --test tests/index.test.js",
     "lint": "eslint index.js tests/*.js",
     "lint:fix": "eslint --fix index.js tests/*.js",
     "format": "prettier --write .",
@@ -28,35 +28,23 @@
   },
   "keywords": [
     "graceful-shutdown",
-    "nodejs",
-    "signal-handling",
+    "graceful",
     "shutdown",
     "cleanup",
-    "error-handling",
-    "exit-code",
-    "nodejs-lts",
+    "signal",
+    "sigterm",
+    "sigint",
+    "sighup",
+    "process",
+    "exit",
+    "handler",
+    "hooks",
+    "lifecycle",
     "phased-shutdown",
-    "custom-signals",
+    "async",
     "typescript",
     "esm",
-    "process-management",
-    "termination-events",
-    "nodejs-tools",
-    "server-cleanup",
-    "uncaught-exception",
-    "unhandled-rejection",
-    "before-exit",
-    "shutdown-strategy",
-    "modular-shutdown",
-    "shutdown-hooks",
-    "async-shutdown",
-    "signal-listeners",
-    "application-shutdown",
-    "nodejs-server",
-    "exit-strategy",
-    "shutdown-tasks",
-    "lifecycle-management",
-    "process-exit"
+    "nodejs"
   ],
   "author": "Hypercliq",
   "license": "MIT",
@@ -65,22 +53,16 @@
   },
   "homepage": "https://hypercliq.github.io/shutdown-cleanup",
   "devDependencies": {
-    "@commitlint/cli": "^19.7.1",
-    "@commitlint/config-conventional": "^19.7.1",
-    "@eslint/js": "^9.20.0",
-    "@types/node": "^22.13.2",
-    "c8": "^10.1.3",
-    "chai": "^5.1.2",
-    "eslint": "^9.20.1",
-    "eslint-plugin-mocha": "^10.5.0",
-    "eslint-plugin-unicorn": "^56.0.1",
-    "globals": "^15.15.0",
+    "@commitlint/cli": "^21.2.0",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.0",
+    "c8": "^11.0.0",
+    "eslint": "^10.6.0",
+    "eslint-plugin-unicorn": "^70.0.0",
+    "globals": "^17.7.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.4.3",
-    "mocha": "^11.1.0",
-    "prettier": "^3.5.0"
-  },
-  "mocha": {
-    "spec": "tests/*.test.js"
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.4"
   }
 }
