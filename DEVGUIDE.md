@@ -15,7 +15,7 @@ The module supports:
 - A shutdown timeout to avoid hanging forever.
 - TypeScript declarations.
 
-The package is ESM-only and supports Node.js 18 and newer.
+The package is ESM-only and supports Node.js 22 and newer.
 
 ## Quick Start
 
