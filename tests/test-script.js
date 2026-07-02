@@ -307,6 +307,7 @@ switch (flag) {
   case '--strategy': {
     {
       const strategy = rest[0]
+      const scenario = rest[1]
 
       // try {
       setErrorHandlingStrategy(strategy)
@@ -315,23 +316,44 @@ switch (flag) {
       //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
       // }
 
-      registerHandler(
-        () => {
-          throw new Error('Something went wrong')
-        },
-        {
-          identifier: 'failingHandler',
-        },
-      )
-      registerHandler(
-        () => {
-          console.log('Handler for succeed')
-        },
-        {
-          identifier: 'succeedingHandler',
-          phase: 2,
-        },
-      )
+      if (scenario === 'signal-handler') {
+        registerHandler(
+          () => {
+            throw new Error('Something went wrong')
+          },
+          {
+            identifier: 'failingSignalHandler',
+            signal: 'SIGTERM',
+          },
+        )
+        registerHandler(
+          () => {
+            console.log('Handler after failed signal-specific handler')
+          },
+          {
+            identifier: 'handlerAfterFailedSignalHandler',
+          },
+        )
+        process.kill(process.pid, 'SIGTERM')
+      } else {
+        registerHandler(
+          () => {
+            throw new Error('Something went wrong')
+          },
+          {
+            identifier: 'failingHandler',
+          },
+        )
+        registerHandler(
+          () => {
+            console.log('Handler for succeed')
+          },
+          {
+            identifier: 'succeedingHandler',
+            phase: 2,
+          },
+        )
+      }
     }
 
     break

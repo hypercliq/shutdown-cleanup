@@ -95,6 +95,10 @@ const registerSignalHandler = (
           console.error('Stopping shutdown process due to error in handler.')
           process.exit(customExitCode ?? 1) //eslint-disable-line unicorn/no-process-exit
         }
+
+        if (customHandler.shouldTerminate) {
+          shutdown(signal)
+        }
       })
   }
 

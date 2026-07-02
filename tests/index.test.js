@@ -417,6 +417,21 @@ describe('Shutdown-cleanup module', function () {
       })
     })
 
+    it('should terminate after a failing signal-specific handler with continue strategy', function () {
+      return spawnChildAndSetupListeners({
+        arguments_: ['--strategy', 'continue', 'signal-handler'],
+        stdoutExpectation: (data) =>
+          expect(data.toString().trim()).to.equal(
+            'Handler after failed signal-specific handler',
+          ),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.equal(
+            "Error in handler 'failingSignalHandler': Error: Something went wrong",
+          ),
+        exitCodeExpectation: os.constants.signals.SIGTERM,
+      })
+    })
+
     it('should handle stop strategy correctly', function () {
       const stderrOutput = []
       return spawnChildAndSetupListeners({
