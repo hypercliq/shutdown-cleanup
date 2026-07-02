@@ -9,6 +9,11 @@ export default [
     languageOptions: { globals: { ...globals.builtin, ...globals.node } },
   },
   pluginJs.configs.recommended,
+  {
+    rules: {
+      'no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    },
+  },
   eslintPluginUnicorn.configs['recommended'],
   mochaPlugin.configs.recommended,
 ]

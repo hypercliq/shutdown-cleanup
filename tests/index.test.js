@@ -456,8 +456,11 @@ describe('Shutdown-cleanup module', function () {
         },
         exitCodeExpectation: 1,
       })
-      expect(stderrOutput).to.have.lengthOf.above(0)
-      expect(stderrOutput.join('\n')).to.include(
+      const stderr = stderrOutput.join('\n')
+      expect(stderr).to.include(
+        "Error in shutdown handler 'failingHandler' for phase '1': Error: Something went wrong",
+      )
+      expect(stderr).to.include(
         'Stopping shutdown process due to error in handler.',
       )
     })

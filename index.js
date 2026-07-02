@@ -216,10 +216,10 @@ const listHandlers = () => {
       handlers: [],
     }
 
-    for (const [identifier, handler] of phaseHandlers) {
+    for (const [identifier, { listener, ...handlerData }] of phaseHandlers) {
       phaseEntry.handlers.push({
         identifier,
-        ...handler,
+        ...handlerData,
       })
     }
 
