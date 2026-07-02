@@ -9,6 +9,6 @@ export default [
     languageOptions: { globals: { ...globals.builtin, ...globals.node } },
   },
   pluginJs.configs.recommended,
-  eslintPluginUnicorn.configs['flat/recommended'],
-  mochaPlugin.configs.flat.recommended,
+  eslintPluginUnicorn.configs['recommended'],
+  mochaPlugin.configs.recommended,
 ]
