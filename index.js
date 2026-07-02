@@ -28,7 +28,7 @@ const setErrorHandlingStrategy = (strategy) => {
 const registeredHandlers = new Map()
 
 const registerPhaseHandler = (phaseKey, phaseHandlers, identifier, handler) => {
-  if (Number.isNaN(phaseKey) || phaseKey < 1) {
+  if (!Number.isInteger(phaseKey) || phaseKey < 1) {
     throw new Error('Phase must be a positive integer greater than 0')
   }
 
@@ -136,11 +136,11 @@ const registerHandler = (handler, options = {}) => {
     }
   }
 
-  if (signal && phase) {
+  if (signal && phase !== undefined) {
     throw new Error('Cannot specify both "signal" and "phase"')
   }
 
-  const phaseKey = signal ? 0 : Number.parseInt(phase ?? '1', 10)
+  const phaseKey = signal ? 0 : (phase ?? 1)
 
   let phaseHandlers = registeredHandlers.get(phaseKey)
   if (!phaseHandlers) {
@@ -293,7 +293,11 @@ let shutdownTimeout = 30_000 // 30 seconds timeout for the shutdown process
 
 // Function to set the shutdown timeout
 const setShutdownTimeout = (timeout) => {
-  if (Number.isNaN(timeout) || timeout <= 0) {
+  if (
+    typeof timeout !== 'number' ||
+    !Number.isFinite(timeout) ||
+    timeout <= 0
+  ) {
     throw new Error('Shutdown timeout must be a positive number')
   }
 
@@ -305,8 +309,8 @@ let customExitCode // Variable to store custom exit code
 
 // Function to set a custom exit code
 const setCustomExitCode = (code) => {
-  if (Number.isNaN(code)) {
-    throw new TypeError('Custom exit code must be a number')
+  if (typeof code !== 'number' || !Number.isInteger(code)) {
+    throw new TypeError('Custom exit code must be a number and an integer')
   }
 
   logger(`Custom exit code set to: ${code}`)

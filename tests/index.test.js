@@ -198,6 +198,19 @@ describe('Shutdown-cleanup module', function () {
       })
     })
 
+    it('should error when registering a handler with a fractional phase', function () {
+      return spawnChildAndSetupListeners({
+        arguments_: ['--register-handler', 'with-invalid-phase', 'fractional'],
+        stdoutExpectation: (data) =>
+          assert.fail('Should not have received any output: ' + data),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.match(
+            /Phase must be a positive integer greater than 0/,
+          ),
+        exitCodeExpectation: 1,
+      })
+    })
+
     it('should error when registering a handler with a duplicate identifier', function () {
       const identifier = 'duplicateHandler'
       return spawnChildAndSetupListeners({
@@ -468,6 +481,19 @@ describe('Shutdown-cleanup module', function () {
         exitCodeExpectation: 1,
       })
     })
+
+    it('should error when setting a string custom exit code', function () {
+      return spawnChildAndSetupListeners({
+        arguments_: ['--custom-exit-code', '42', 'raw'],
+        stdoutExpectation: (data) =>
+          assert.fail('Should not have received any output: ' + data),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.match(
+            /Custom exit code must be a number and an integer/,
+          ),
+        exitCodeExpectation: 1,
+      })
+    })
   })
 
   describe('Shutdown timeout', function () {
@@ -500,6 +526,19 @@ describe('Shutdown-cleanup module', function () {
     it('should error when setting a non-numeric shutdown timeout', function () {
       return spawnChildAndSetupListeners({
         arguments_: ['--custom-timeout', 'invalid'],
+        stdoutExpectation: (data) =>
+          assert.fail('Should not have received any output: ' + data),
+        stderrExpectation: (data) =>
+          expect(data.toString().trim()).to.match(
+            /Shutdown timeout must be a positive number/,
+          ),
+        exitCodeExpectation: 1,
+      })
+    })
+
+    it('should error when setting a string shutdown timeout', function () {
+      return spawnChildAndSetupListeners({
+        arguments_: ['--custom-timeout', '1000', 'raw'],
         stdoutExpectation: (data) =>
           assert.fail('Should not have received any output: ' + data),
         stderrExpectation: (data) =>

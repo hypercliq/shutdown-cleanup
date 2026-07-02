@@ -115,8 +115,10 @@ const handleHandlerRegistration = (action, parameters) => {
 
     case 'with-invalid-phase': {
       // try {
+      const phase = parameters[0] === 'fractional' ? 1.5 : 0
+
       registerHandler(() => {}, {
-        phase: 0,
+        phase,
       })
       // } catch (error) {
       //   console.error(error.message)
@@ -362,7 +364,8 @@ switch (flag) {
   case '--custom-timeout': {
     {
       const timeout = rest[0]
-      setShutdownTimeout(Number(timeout))
+      const timeoutValue = rest[1] === 'raw' ? timeout : Number(timeout)
+      setShutdownTimeout(timeoutValue)
 
       // Register a handler that takes longer than the timeout
       registerHandler(
@@ -381,8 +384,9 @@ switch (flag) {
   case '--custom-exit-code': {
     {
       const exitCode = rest[0]
+      const exitCodeValue = rest[1] === 'raw' ? exitCode : Number(exitCode)
       // try {
-      setCustomExitCode(Number(exitCode))
+      setCustomExitCode(exitCodeValue)
       registerHandler(async () => {
         console.log('Handler for exit')
       })
