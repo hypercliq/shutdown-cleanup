@@ -55,15 +55,18 @@ const handleHandlerRegistration = (action, parameters) => {
         const signal = parameters[1]
         const includeSignalHandlers = parameters[2] ?? false
 
-        results.identifier = signal
-          ? registerHandler(() => {}, {
-              identifier,
-              signal,
-              shouldTerminate: true,
-            })
-          : registerHandler(() => {}, {
-              identifier,
-            })
+        results.identifier = registerHandler(
+          () => {},
+          signal
+            ? {
+                identifier,
+                signal,
+                shouldTerminate: true,
+              }
+            : {
+                identifier,
+              },
+        )
 
         results.listBefore = listHandlers()
         results.signalsBefore = listSignals({

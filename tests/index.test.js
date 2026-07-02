@@ -451,7 +451,9 @@ describe('Shutdown-cleanup module', function () {
         arguments_: ['--strategy', 'stop'],
         stdoutExpectation: (data) =>
           assert.fail('Should not have received any output: ' + data),
-        stderrExpectation: (data) => stderrOutput.push(data.toString().trim()),
+        stderrExpectation: (data) => {
+          stderrOutput.push(data.toString().trim())
+        },
         exitCodeExpectation: 1,
       })
     })
@@ -489,7 +491,7 @@ describe('Shutdown-cleanup module', function () {
           assert.fail('Should not have received any output: ' + data),
         stderrExpectation: (data) =>
           expect(data.toString().trim()).to.match(
-            /Custom exit code must be a number and an integer/,
+            /Custom exit code must be a number and a safe integer/,
           ),
         exitCodeExpectation: 1,
       })
@@ -591,8 +593,9 @@ describe('Shutdown-cleanup module', function () {
       const shutdownLog = []
       await spawnChildAndSetupListeners({
         arguments_: ['--phase-handling', 'same-phase'],
-        stdoutExpectation: (data_1) =>
-          shutdownLog.push(...data_1.toString().trim().split('\n')),
+        stdoutExpectation: (data_1) => {
+          shutdownLog.push(...data_1.toString().trim().split('\n'))
+        },
         stderrExpectation: (data_3) =>
           assert.fail('Should not have received any error: ' + data_3),
         exitCodeExpectation: 0,

@@ -6,7 +6,7 @@ const { DEBUG } = process.env
 const enabled = DEBUG && /shutdown-cleanup|^\*$/.test(DEBUG)
 const logger = (...message) => {
   if (enabled) {
-    console.debug('\uD83D\uDC1Eshutdown-cleanup', ...message)
+    console.debug('\u{1F41E}shutdown-cleanup', ...message)
   }
 }
 
@@ -14,7 +14,12 @@ const signals = new Set(['SIGTERM', 'SIGHUP', 'SIGINT', 'beforeExit'])
 const uncatchableSignals = new Set(['SIGKILL', 'SIGSTOP'])
 const removedSignals = new Set()
 
-let errorHandlingStrategy = 'continue'
+const state = {
+  isShuttingDown: false,
+  shutdownTimeout: 30_000, // Default timeout of 30 seconds
+  customExitCode: undefined,
+  errorHandlingStrategy: 'continue', // Default strategy is to continue on error
+}
 
 // Sets the global error handling strategy
 const setErrorHandlingStrategy = (strategy) => {
@@ -22,13 +27,13 @@ const setErrorHandlingStrategy = (strategy) => {
     throw new Error("handling strategy must be either 'continue' or 'stop'")
   }
 
-  errorHandlingStrategy = strategy
+  state.errorHandlingStrategy = strategy
 }
 
 const registeredHandlers = new Map()
 
 const registerPhaseHandler = (phaseKey, phaseHandlers, identifier, handler) => {
-  if (!Number.isInteger(phaseKey) || phaseKey < 1) {
+  if (!Number.isSafeInteger(phaseKey) || phaseKey < 1) {
     throw new Error('Phase must be a positive integer greater than 0')
   }
 
@@ -69,10 +74,10 @@ const registerSignalHandler = (
     )
   }
 
-  const terminate = shouldTerminate !== false // Default to true if undefined
+  const isTerminate = shouldTerminate !== false // Default to true if undefined
 
   // Define the listener for the signal
-  const listener = (signal) => {
+  const listener = async (signal) => {
     const customHandler = phaseHandlers.get(identifier)
 
     if (!customHandler) {
@@ -82,24 +87,22 @@ const registerSignalHandler = (
 
     logger(`Handling signal: ${signal}`)
 
-    Promise.resolve()
-      .then(() => customHandler.handler(signal))
-      .then(() => {
-        if (customHandler.shouldTerminate) {
-          shutdown(signal)
-        }
-      })
-      .catch((error) => {
-        console.error(`Error in handler '${identifier}': ${error}`)
-        if (errorHandlingStrategy === 'stop') {
-          console.error('Stopping shutdown process due to error in handler.')
-          process.exit(customExitCode ?? 1) //eslint-disable-line unicorn/no-process-exit
-        }
+    try {
+      await customHandler.handler(signal)
+      if (customHandler.shouldTerminate) {
+        shutdown(signal)
+      }
+    } catch (error) {
+      console.error(`Error in handler '${identifier}': ${error}`)
+      if (state.errorHandlingStrategy === 'stop') {
+        console.error('Stopping shutdown process due to error in handler.')
+        process.exit(state.customExitCode ?? 1) //eslint-disable-line unicorn/no-process-exit
+      }
 
-        if (customHandler.shouldTerminate) {
-          shutdown(signal)
-        }
-      })
+      if (customHandler.shouldTerminate) {
+        shutdown(signal)
+      }
+    }
   }
 
   // Register the handler
@@ -107,7 +110,7 @@ const registerSignalHandler = (
     type: 'signal',
     signal,
     handler,
-    shouldTerminate: terminate,
+    shouldTerminate: isTerminate,
     listener,
   })
 
@@ -200,7 +203,10 @@ const removeHandler = (identifier) => {
 const listHandlers = () => {
   const handlerList = []
 
-  const sortedPhases = [...registeredHandlers.keys()].sort((a, b) => a - b)
+  const sortedPhases = registeredHandlers
+    .keys()
+    .toArray()
+    .toSorted((a, b) => a - b)
 
   for (const phase of sortedPhases) {
     const phaseHandlers = registeredHandlers.get(phase)
@@ -278,7 +284,7 @@ const DEFAULT_EXIT_CODE = 1
 
 const getExitCode = (signal) => {
   let code
-  if (Number.isInteger(signal)) {
+  if (Number.isSafeInteger(signal)) {
     code = signal
   } else if (signal instanceof Error) {
     code = signal.errno
@@ -288,8 +294,6 @@ const getExitCode = (signal) => {
 
   return code ?? DEFAULT_EXIT_CODE
 }
-
-let shutdownTimeout = 30_000 // 30 seconds timeout for the shutdown process
 
 // Function to set the shutdown timeout
 const setShutdownTimeout = (timeout) => {
@@ -302,63 +306,61 @@ const setShutdownTimeout = (timeout) => {
   }
 
   logger(`Shutdown timeout set to: ${timeout}`)
-  shutdownTimeout = timeout
+  state.shutdownTimeout = timeout
 }
-
-let customExitCode // Variable to store custom exit code
 
 // Function to set a custom exit code
 const setCustomExitCode = (code) => {
-  if (typeof code !== 'number' || !Number.isInteger(code)) {
-    throw new TypeError('Custom exit code must be a number and an integer')
+  if (typeof code !== 'number' || !Number.isSafeInteger(code)) {
+    throw new TypeError('Custom exit code must be a number and a safe integer')
   }
 
   logger(`Custom exit code set to: ${code}`)
-  customExitCode = code
+  state.customExitCode = code
 }
-
-let isShuttingDown = false
 
 // Main shutdown handler
 const shutdown = async (signal) => {
-  if (isShuttingDown) {
+  if (state.isShuttingDown) {
     logger('Shutdown already in progress')
     return
   }
 
-  isShuttingDown = true
+  state.isShuttingDown = true
   logger(`Shutting down on ${signal}`)
 
   const shutdownTimer = setTimeout(() => {
     console.warn('Shutdown process timed out. Forcing exit.')
-    process.exit(customExitCode ?? 1) // eslint-disable-line unicorn/no-process-exit
-  }, shutdownTimeout)
+    process.exit(state.customExitCode ?? 1) // eslint-disable-line unicorn/no-process-exit
+  }, state.shutdownTimeout)
 
-  const sortedPhases = [...registeredHandlers.keys()]
+  const sortedPhases = registeredHandlers
+    .keys()
     .filter((phase) => phase !== 0)
-    .sort((a, b) => a - b)
+    .toArray()
+    .toSorted((a, b) => a - b)
 
   for (const phase of sortedPhases) {
     const phaseHandlers = registeredHandlers.get(phase)
     for (const [identifier, handlerEntry] of phaseHandlers) {
-      await Promise.resolve()
-        .then(() => handlerEntry.handler(signal))
-        .catch((error) => {
-          console.error(
-            `Error in shutdown handler '${identifier}' for phase '${phase}': ${error}`,
-          )
-          if (errorHandlingStrategy === 'stop') {
-            console.error('Stopping shutdown process due to error in handler.')
-            clearTimeout(shutdownTimer)
-            process.exit(customExitCode ?? 1) //eslint-disable-line unicorn/no-process-exit
-          }
-        })
+      try {
+        await handlerEntry.handler(signal)
+      } catch (error) {
+        console.error(
+          `Error in shutdown handler '${identifier}' for phase '${phase}': ${error}`,
+        )
+        if (state.errorHandlingStrategy === 'stop') {
+          console.error('Stopping shutdown process due to error in handler.')
+          clearTimeout(shutdownTimer)
+          process.exit(state.customExitCode ?? 1) //eslint-disable-line unicorn/no-process-exit
+        }
+      }
     }
   }
 
   clearTimeout(shutdownTimer)
   logger('Shutdown completed')
-  const exitCode = customExitCode ?? getExitCode(signal)
+  const exitCode = state.customExitCode ?? getExitCode(signal)
   logger(`Shutdown exitCode: ${exitCode}`)
   process.exit(exitCode) //eslint-disable-line unicorn/no-process-exit
 }
