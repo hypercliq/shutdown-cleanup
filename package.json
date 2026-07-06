@@ -59,7 +59,7 @@
     "@types/node": "^26.1.0",
     "c8": "^11.0.0",
     "eslint": "^10.6.0",
-    "eslint-plugin-unicorn": "^70.0.0",
+    "eslint-plugin-unicorn": "^71.0.0",
     "globals": "^17.7.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
