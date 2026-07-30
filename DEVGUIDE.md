@@ -217,7 +217,7 @@ registerHandler(handler: Handler, options?: RegisterHandlerOptions): string
 
 Options:
 
-- `identifier?: string`: Unique handler identifier. A random identifier is generated when omitted.
+- `identifier?: string`: Unique handler identifier. An identifier is generated when omitted.
 - `phase?: number`: Positive integer phase for phased shutdown handlers. Defaults to `1`.
 - `signal?: string`: Signal or event name for a signal-specific handler.
 - `shouldTerminate?: boolean`: For signal-specific handlers, controls whether phased shutdown runs after the handler. Defaults to `true`.

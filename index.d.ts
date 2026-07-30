@@ -4,7 +4,7 @@ export type ErrorHandlingStrategy = 'continue' | 'stop'
 
 export interface BaseRegisterHandlerOptions {
   /**
-   * An optional identifier for the handler. A random identifier is generated if not provided.
+   * An optional identifier for the handler. An identifier is generated if not provided.
    */
   identifier?: string
 }
