@@ -32,6 +32,11 @@ const setErrorHandlingStrategy = (strategy) => {
 
 const registeredHandlers = new Map()
 
+const hasHandlerIdentifier = (identifier) =>
+  registeredHandlers
+    .values()
+    .some((phaseHandlers) => phaseHandlers.has(identifier))
+
 const registerPhaseHandler = (phaseKey, phaseHandlers, identifier, handler) => {
   if (!Number.isSafeInteger(phaseKey) || phaseKey < 1) {
     throw new Error('Phase must be a positive integer greater than 0')
@@ -119,6 +124,19 @@ const registerSignalHandler = (
   logger(`Signal handler registered for signal: ${signal}`)
 }
 
+const createUniqueIdentifier = (() => {
+  let generatedHandlerId = Date.now() // Start with a timestamp to reduce collision risk
+
+  return () => {
+    let identifier
+    do {
+      identifier = `handler_${generatedHandlerId++}`
+    } while (hasHandlerIdentifier(identifier))
+
+    return identifier
+  }
+})()
+
 // Registers a handler either for a specific signal or a phase
 const registerHandler = (handler, options = {}) => {
   if (typeof handler !== 'function') {
@@ -126,17 +144,14 @@ const registerHandler = (handler, options = {}) => {
   }
 
   const {
-    identifier = `handler_${Math.random().toString(36).slice(2, 11)}`,
+    identifier = createUniqueIdentifier(),
     phase,
     signal,
     shouldTerminate,
   } = options
 
-  // Check if identifier already exists
-  for (const phaseHandlers of registeredHandlers.values()) {
-    if (phaseHandlers.has(identifier)) {
-      throw new Error(`Handler with identifier '${identifier}' already exists`)
-    }
+  if (hasHandlerIdentifier(identifier)) {
+    throw new Error(`Handler with identifier '${identifier}' already exists`)
   }
 
   if (signal && phase !== undefined) {
