@@ -1,44 +1,64 @@
 export type Handler = (signal: string | number | Error) => Promise<void> | void
 
-export interface RegisterHandlerOptions {
+export type ErrorHandlingStrategy = 'continue' | 'stop'
+
+export interface BaseRegisterHandlerOptions {
   /**
    * An optional identifier for the handler. A random identifier is generated if not provided.
    */
   identifier?: string
+}
+
+export interface PhaseRegisterHandlerOptions extends BaseRegisterHandlerOptions {
   /**
    * The phase during which the handler should be executed. Defaults to phase 1.
    * Cannot be used together with `signal`.
    */
   phase?: number
+  signal?: never
+  shouldTerminate?: never
+}
+
+export interface SignalRegisterHandlerOptions extends BaseRegisterHandlerOptions {
   /**
    * The signal to listen for. If specified, registers a signal-specific handler.
    * Cannot be used together with `phase`.
    */
-  signal?: string
+  signal: string
   /**
    * For signal-specific handlers, indicates whether the application should terminate after the handler executes.
    * Defaults to `true`.
    */
   shouldTerminate?: boolean
+  phase?: never
 }
 
-export interface HandlerEntry {
+export type RegisterHandlerOptions =
+  PhaseRegisterHandlerOptions | SignalRegisterHandlerOptions
+
+export interface PhaseHandlerEntry {
   identifier: string
-  type: 'phase' | 'signal'
+  type: 'phase'
   handler: Handler
-  /**
-   * For signal-specific handlers, the signal being listened to.
-   */
-  signal?: string
-  /**
-   * For signal-specific handlers, indicates whether the application should terminate after the handler executes.
-   */
-  shouldTerminate?: boolean
 }
+
+export interface SignalHandlerEntry {
+  identifier: string
+  type: 'signal'
+  handler: Handler
+  signal: string
+  shouldTerminate: boolean
+}
+
+export type HandlerEntry = PhaseHandlerEntry | SignalHandlerEntry
 
 export interface PhaseEntry {
   phaseKey: number | 'signal'
   handlers: HandlerEntry[]
+}
+
+export interface ListSignalsOptions {
+  includeSignalHandlers?: boolean
 }
 
 /**
@@ -65,9 +85,7 @@ export function listHandlers(): PhaseEntry[]
  * @example
  * const signals = listSignals({ includeSignalHandlers: true });
  */
-export function listSignals(options?: {
-  includeSignalHandlers?: boolean
-}): string[]
+export function listSignals(options?: ListSignalsOptions): string[]
 
 /**
  * Registers a handler to be executed during the shutdown process or when a specific signal is received.
@@ -118,7 +136,7 @@ export function setCustomExitCode(code: number): void
  * @example
  * setErrorHandlingStrategy('continue');
  */
-export function setErrorHandlingStrategy(strategy: 'continue' | 'stop'): void
+export function setErrorHandlingStrategy(strategy: ErrorHandlingStrategy): void
 
 /**
  * Sets the timeout for the shutdown process. If the shutdown does not complete within this timeframe, the process is forcefully terminated.
