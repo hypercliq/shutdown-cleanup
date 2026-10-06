@@ -59,7 +59,7 @@
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
     "@eslint/js": "^10.0.1",
-    "@types/node": "^22.20.5",
+    "@types/node": "^26.6.4",
     "c8": "^12.0.0",
     "eslint": "^10.8.0",
     "eslint-plugin-unicorn": "^72.0.0",
