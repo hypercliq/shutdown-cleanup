@@ -18,6 +18,32 @@ const spawnChildAndSetupListeners = ({ arguments_, ...expectations }) =>
     arguments_: [testScriptPath, ...arguments_],
   })
 
+const runShutdownScenario = (source, expectations = {}) =>
+  runSubprocess({
+    arguments_: [
+      '--input-type=module',
+      '--eval',
+      `
+        import process from 'node:process'
+        import { setTimeout as delay } from 'node:timers/promises'
+        import {
+          addSignal,
+          registerHandler,
+          setCustomExitCode,
+          setErrorHandlingStrategy,
+          setShutdownTimeout,
+        } from ${JSON.stringify(new URL('../index.js', import.meta.url).href)}
+        ${source}
+      `,
+    ],
+    ...expectations,
+  })
+
+const expectLines =
+  (...lines) =>
+  (output) =>
+    assert.strictEqual(output.toString(), lines.join('\n') + '\n')
+
 describe('Shutdown-cleanup module', () => {
   describe('Handler Registration', () => {
     it('should register, list and remove a handler', () => {
@@ -348,6 +374,239 @@ describe('Shutdown-cleanup module', () => {
         exitCodeExpectation: 0,
       })
     })
+  })
+
+  describe('Coordinated signal shutdown', () => {
+    for (const signal of ['SIGTERM', 'beforeExit']) {
+      for (const customExitCode of [undefined, 42]) {
+        it(`times out a never-settling ${signal} handler with exit code ${customExitCode ?? 1}`, () =>
+          runShutdownScenario(
+            `
+              setShutdownTimeout(50)
+              ${customExitCode === undefined ? '' : `setCustomExitCode(${customExitCode})`}
+              registerHandler(() => {
+                console.log('signal started')
+                return new Promise(() => {})
+              }, { signal: '${signal}' })
+              registerHandler(() => console.log('unexpected phase'))
+              ${signal === 'beforeExit' ? '' : `process.emit('${signal}', '${signal}')`}
+            `,
+            {
+              stdoutExpectation: expectLines('signal started'),
+              stderrExpectation: expectLines(
+                'Shutdown process timed out. Forcing exit.',
+              ),
+              exitCodeExpectation: customExitCode ?? 1,
+              timeoutMs: 2000,
+            },
+          ))
+      }
+    }
+
+    it('uses one deadline for the signal handler and subsequent phases', () =>
+      runShutdownScenario(
+        `
+          setShutdownTimeout(500)
+          registerHandler(async () => {
+            console.log('signal started')
+            await delay(300)
+            console.log('signal finished')
+          }, { signal: 'SIGTERM', shouldTerminate: true })
+          registerHandler(async () => {
+            console.log('phase started')
+            await delay(300)
+            console.log('unexpected phase completion')
+          })
+          process.emit('SIGTERM', 'SIGTERM')
+        `,
+        {
+          stdoutExpectation: expectLines(
+            'signal started',
+            'signal finished',
+            'phase started',
+          ),
+          stderrExpectation: expectLines(
+            'Shutdown process timed out. Forcing exit.',
+          ),
+          exitCodeExpectation: 1,
+        },
+      ))
+
+    for (const competingEvent of [
+      'SIGTERM',
+      'SIGINT',
+      'beforeExit',
+      'app:other',
+    ]) {
+      it(`ignores competing ${competingEvent} during the signal handler and phases`, () =>
+        runShutdownScenario(
+          `
+            let calls = 0
+            const compete = () => process.emit('${competingEvent}', 99)
+            registerHandler(async (value) => {
+              console.log('signal started: ' + value)
+              // Emit reentrantly as well as while the handler is suspended.
+              if (++calls === 1) compete()
+              await delay(20)
+              console.log('signal finished: ' + value)
+            }, { signal: 'SIGTERM' })
+            registerHandler(() => console.log('unexpected other handler'), {
+              signal: 'app:other', shouldTerminate: true,
+            })
+            registerHandler(async (value) => {
+              console.log('phase 1: ' + value)
+              compete()
+              await delay(20)
+            })
+            registerHandler((value) => console.log('phase 2: ' + value), {
+              phase: 2,
+            })
+            process.emit('SIGTERM', 'SIGTERM')
+            compete()
+          `,
+          {
+            stdoutExpectation: expectLines(
+              'signal started: SIGTERM',
+              'signal finished: SIGTERM',
+              'phase 1: SIGTERM',
+              'phase 2: SIGTERM',
+            ),
+            exitCodeExpectation: os.constants.signals.SIGTERM,
+          },
+        ))
+    }
+
+    it('ignores a terminating handler when a default signal starts shutdown first', () =>
+      runShutdownScenario(
+        `
+          registerHandler(() => console.log('unexpected signal handler'), {
+            signal: 'SIGTERM',
+          })
+          registerHandler(async (value) => {
+            console.log('phase started: ' + value)
+            process.emit('SIGTERM', 'SIGTERM')
+            await delay(20)
+            console.log('phase finished: ' + value)
+          })
+          process.emit('SIGINT', 'SIGINT')
+          process.emit('SIGTERM', 'SIGTERM')
+        `,
+        {
+          stdoutExpectation: expectLines(
+            'phase started: SIGINT',
+            'phase finished: SIGINT',
+          ),
+          exitCodeExpectation: os.constants.signals.SIGINT,
+        },
+      ))
+
+    it('coordinates natural beforeExit with its handler and preserves the numeric exit code', () =>
+      runShutdownScenario(
+        `
+          process.exitCode = 7
+          registerHandler(async (value) => {
+            console.log('beforeExit started: ' + value)
+            process.emit('beforeExit', 99)
+            process.emit('SIGTERM', 'SIGTERM')
+            await delay(20)
+            console.log('beforeExit finished: ' + value)
+          }, { signal: 'beforeExit' })
+          registerHandler((value) => console.log('phase: ' + value))
+        `,
+        {
+          stdoutExpectation: expectLines(
+            'beforeExit started: 7',
+            'beforeExit finished: 7',
+            'phase: 7',
+          ),
+          exitCodeExpectation: 7,
+        },
+      ))
+
+    for (const strategy of ['continue', 'stop']) {
+      for (const failure of ['throw', 'reject']) {
+        for (const customExitCode of [undefined, 42]) {
+          it(`handles a signal handler ${failure} with ${strategy} and ${customExitCode ?? 'default'} exit code`, () =>
+            runShutdownScenario(
+              `
+                setShutdownTimeout(1000)
+                setErrorHandlingStrategy('${strategy}')
+                ${customExitCode === undefined ? '' : `setCustomExitCode(${customExitCode})`}
+                registerHandler(${failure === 'reject' ? 'async' : ''} () => {
+                  console.log('signal started')
+                  ${failure === 'reject' ? 'await delay(20)' : ''}
+                  throw new Error('cleanup failed')
+                }, { signal: 'app:shutdown', identifier: 'failingSignal' })
+                registerHandler((value) => console.log('phase 1: ' + value))
+                registerHandler((value) => console.log('phase 2: ' + value), {
+                  phase: 2,
+                })
+                process.emit('app:shutdown', 23)
+              `,
+              {
+                stdoutExpectation: expectLines(
+                  'signal started',
+                  ...(strategy === 'continue'
+                    ? ['phase 1: 23', 'phase 2: 23']
+                    : []),
+                ),
+                stderrExpectation: expectLines(
+                  "Error in handler 'failingSignal': Error: cleanup failed",
+                  ...(strategy === 'stop'
+                    ? ['Stopping shutdown process due to error in handler.']
+                    : []),
+                ),
+                exitCodeExpectation:
+                  customExitCode ?? (strategy === 'stop' ? 1 : 23),
+              },
+            ))
+        }
+      }
+    }
+
+    it('keeps non-terminating handlers repeatable and outside the shutdown deadline', () =>
+      runShutdownScenario(
+        `
+          setShutdownTimeout(50)
+          let calls = 0
+          const pending = []
+          registerHandler(() => {
+            const call = ++calls
+            console.log('repeat started: ' + call)
+            const work = delay(100).then(() => console.log('repeat finished: ' + call))
+            pending.push(work)
+            return work
+          }, { signal: 'SIGTERM', shouldTerminate: false })
+          process.emit('SIGTERM', 'SIGTERM')
+          process.emit('SIGTERM', 'SIGTERM')
+          await Promise.all(pending)
+          console.log('still running')
+          setShutdownTimeout(1000)
+          registerHandler(async () => {
+            // Non-terminating handlers remain repeatable during shutdown too.
+            process.emit('SIGTERM', 'SIGTERM')
+            process.emit('SIGTERM', 'SIGTERM')
+            await Promise.all(pending)
+            console.log('phase finished')
+          })
+          addSignal('app:shutdown')
+          process.emit('app:shutdown', 0, 'extra event argument')
+        `,
+        {
+          stdoutExpectation: expectLines(
+            'repeat started: 1',
+            'repeat started: 2',
+            'repeat finished: 1',
+            'repeat finished: 2',
+            'still running',
+            'repeat started: 3',
+            'repeat started: 4',
+            'repeat finished: 3',
+            'repeat finished: 4',
+            'phase finished',
+          ),
+        },
+      ))
   })
 
   describe('Error handling strategy', () => {

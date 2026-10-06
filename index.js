@@ -90,24 +90,24 @@ const registerSignalHandler = (
       return
     }
 
-    logger(`Handling signal: ${signal}`)
-
-    try {
-      await customHandler.handler(signal)
-      if (customHandler.shouldTerminate) {
-        shutdown(signal)
-      }
-    } catch (error) {
-      console.error(`Error in handler '${identifier}': ${error}`)
-      if (state.errorHandlingStrategy === 'stop') {
-        console.error('Stopping shutdown process due to error in handler.')
-        process.exit(state.customExitCode ?? 1) //eslint-disable-line unicorn/no-process-exit
-      }
-
-      if (customHandler.shouldTerminate) {
-        shutdown(signal)
+    const runHandler = async () => {
+      logger(`Handling signal: ${signal}`)
+      try {
+        await customHandler.handler(signal)
+      } catch (error) {
+        console.error(`Error in handler '${identifier}': ${error}`)
+        if (state.errorHandlingStrategy === 'stop') {
+          console.error('Stopping shutdown process due to error in handler.')
+          process.exit(state.customExitCode ?? 1) //eslint-disable-line unicorn/no-process-exit
+        }
       }
     }
+
+    if (customHandler.shouldTerminate) {
+      return runShutdown(signal, runHandler)
+    }
+
+    await runHandler()
   }
 
   // Register the handler
@@ -334,8 +334,8 @@ const setCustomExitCode = (code) => {
   state.customExitCode = code
 }
 
-// Main shutdown handler
-const shutdown = async (signal) => {
+// Claim shutdown and start one deadline before invoking any terminating handler.
+const runShutdown = async (signal, runSignalHandler) => {
   if (state.isShuttingDown) {
     logger('Shutdown already in progress')
     return
@@ -348,6 +348,10 @@ const shutdown = async (signal) => {
     console.warn('Shutdown process timed out. Forcing exit.')
     process.exit(state.customExitCode ?? 1) // eslint-disable-line unicorn/no-process-exit
   }, state.shutdownTimeout)
+
+  if (runSignalHandler) {
+    await runSignalHandler()
+  }
 
   const sortedPhases = registeredHandlers
     .keys()
@@ -379,6 +383,9 @@ const shutdown = async (signal) => {
   logger(`Shutdown exitCode: ${exitCode}`)
   process.exit(exitCode) //eslint-disable-line unicorn/no-process-exit
 }
+
+// Only forward the first event argument; other arguments are not cleanup hooks.
+const shutdown = (signal) => runShutdown(signal)
 
 const attachListener = (signal) => process.on(signal, shutdown)
 for (const signal of signals) {
