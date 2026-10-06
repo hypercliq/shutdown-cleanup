@@ -89,7 +89,9 @@ registerHandler(
 )
 ```
 
-When `shouldTerminate` is `false`, the handler runs and the process stays alive. When `shouldTerminate` is omitted or `true`, the signal-specific handler runs first, then the normal phased shutdown runs.
+When `shouldTerminate` is `false`, the handler runs without starting shutdown. It remains repeatable, including while shutdown is in progress; repeated events can run overlapping invocations. Errors still follow the configured error strategy, so `stop` exits on failure.
+
+When `shouldTerminate` is omitted or `true`, the signal-specific handler and the normal phased cleanup form one shutdown operation. The shutdown guard and deadline start before the signal-specific handler is invoked. That handler runs first, then the phases run in order. Further terminating signals or events (including `beforeExit`) are ignored throughout this operation, even if they have their own signal-specific handlers. The first trigger's argument is passed to the handler and phases and determines the normal exit code.
 
 If you register a signal-specific handler for a default signal such as `SIGTERM`, the default listener is replaced for that signal. Removing the handler restores the default listener.
 
@@ -166,6 +168,10 @@ setShutdownTimeout(20_000)
 ```
 
 The default timeout is 30 seconds. The value must be a positive finite number of milliseconds.
+
+One deadline covers the entire shutdown operation: the terminating signal-specific handler, if any, followed by all phased handlers. Time spent in the signal-specific handler consumes the same budget as the phases; the timer is not restarted between them or after an error under `continue`. A signal-specific handler that never settles therefore forces exit when the deadline expires. The timer also keeps the process alive while asynchronous cleanup is pending, including cleanup started by `beforeExit`.
+
+Handlers registered with `shouldTerminate: false` do not start a shutdown timer. If they run while another trigger has already started shutdown, that operation's deadline still applies to process termination. On timeout, the process exits with the custom exit code if set, otherwise `1`.
 
 The timeout cannot interrupt CPU-bound synchronous work that blocks the event loop. Keep synchronous handlers short.
 
@@ -295,7 +301,7 @@ The default strategy is `continue`.
 
 ### `setShutdownTimeout(timeout)`
 
-Sets the maximum time allowed for phased shutdown.
+Sets the maximum time allowed for a terminating signal-specific handler and all subsequent phased cleanup together, or for phased cleanup alone when triggered by a default listener.
 
 ```ts
 setShutdownTimeout(timeout: number): void
@@ -369,6 +375,8 @@ registerHandler(
 
 ## Migration From Older Versions
 
+Terminating signal-specific handlers now run inside the shutdown guard and timeout. Previously, their runtime was outside the timeout, repeated events could invoke them more than once, and a competing default signal or `beforeExit` could start phases before they finished. Applications relying on that behavior should account for the signal-specific handler's runtime in `setShutdownTimeout` and use `shouldTerminate: false` for repeatable signal actions. This changes when cleanup can be interrupted or skipped; it adds no public API and leaves exit-code conventions unchanged.
+
 Version 7 unified the old phase and signal registration APIs behind `registerHandler`.
 
 Old phase handler style:
@@ -428,7 +436,7 @@ If you were importing `registerSignalHandler` or `registerPhaseHandler`, replace
 ## Operational Notes
 
 - Register cleanup handlers during application startup.
-- Keep handlers idempotent where possible. A second signal received during shutdown is ignored.
+- Keep handlers idempotent where possible. Further terminating signals and events are ignored once shutdown starts; `shouldTerminate: false` handlers remain repeatable.
 - Prefer asynchronous I/O cleanup over long synchronous work.
 - Avoid calling `process.exit()` inside handlers unless you intentionally want to bypass later cleanup.
 - Use explicit handler identifiers in production services so logs are meaningful.
