@@ -93,6 +93,8 @@ Full API reference, phased shutdown examples, signal-specific handlers, error st
 
 For repository setup and the separate development-toolchain minimum (Node.js 22.22.1 on the 22.x line, or 24+), see [Contributing](https://github.com/hypercliq/shutdown-cleanup/blob/main/CONTRIBUTING.md).
 
+Maintainers: see the [release runbook](RELEASING.md) for publishing and recovery.
+
 Upgrading from version 7? Version 8 raises the consumer runtime minimum from Node.js 18 to 22.0.0. See [migration guidance](https://hypercliq.github.io/shutdown-cleanup/DEVGUIDE.html#migration-from-older-versions).
 
 ## License
