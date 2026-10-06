@@ -51,7 +51,7 @@ jobs:
           node -p "JSON.stringify({platform:process.platform,architecture:process.arch,node:process.version,osRelease:require('node:os').release()})" | tee platform-validation.log
           node -e "require('node:assert/strict').equal(process.arch, process.env.EXPECTED_ARCHITECTURE)"
           npm run test:package -- --runtime-only "$RUNNER_TEMP/release/package.tgz" 2>&1 | tee -a platform-validation.log
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: validation-${{ matrix.runner.label }}-node-${{ matrix.node }}-${{ github.run_attempt }}
