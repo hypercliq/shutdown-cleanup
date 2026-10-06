@@ -70,6 +70,17 @@ registerHandler(
 
 Use phases when one cleanup step depends on another. For example, stop accepting requests before disconnecting the database.
 
+### Registering and Removing Handlers During Shutdown
+
+When shutdown starts, the module snapshots all phased handler registrations before invoking any cleanup, including a terminating signal-specific handler. The snapshot runs in ascending phase order and registration order within each phase.
+
+- Removing a handler before its invocation skips it, including removals made while an earlier asynchronous handler is suspended. If every handler in a future phase is removed, that phase is safely skipped and later phases still run.
+- Removing a handler that is already running, including self-removal, does not cancel its invocation. Shutdown still awaits its completion and applies the configured error strategy.
+- Registrations made after shutdown starts are accepted and visible through `listHandlers()`, but never join the active phased cleanup. This applies to the current phase, future phases, new phases, and registrations made by the terminating signal-specific handler. Newly registered work therefore cannot keep extending the cleanup queue.
+- Removing and re-registering an identifier creates a new registration, even with the same function and phase. The removed registration is skipped and its replacement is excluded from the active cleanup.
+
+Register all required cleanup during application startup. If a cleanup handler needs to perform additional work during shutdown, perform and await that work inside the handler. The existing rules for repeatable signal-specific handlers with `shouldTerminate: false` still apply.
+
 ## Signal-Specific Handlers
 
 Signal-specific handlers let you attach behavior to a single signal or process event.
@@ -374,6 +385,8 @@ registerHandler(
 ```
 
 ## Migration From Older Versions
+
+Phased cleanup now uses a fixed snapshot taken when shutdown starts. Previously, newly registered handlers could run if added to a current or future phase, and handlers registered by a terminating signal-specific handler could join the subsequent phases. Those registrations are now excluded from the active cleanup; perform and await any required late cleanup directly instead. Removing pending handlers remains supported, and removing the last handler in a future phase now safely skips it instead of throwing. Phase ordering, registration ordering, and exit-code conventions are unchanged.
 
 Terminating signal-specific handlers now run inside the shutdown guard and timeout. Previously, their runtime was outside the timeout, repeated events could invoke them more than once, and a competing default signal or `beforeExit` could start phases before they finished. Applications relying on that behavior should account for the signal-specific handler's runtime in `setShutdownTimeout` and use `shouldTerminate: false` for repeatable signal actions. This changes when cleanup can be interrupted or skipped; it adds no public API and leaves exit-code conventions unchanged.
 

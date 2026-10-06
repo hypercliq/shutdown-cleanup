@@ -91,6 +91,8 @@ export function listSignals(options?: ListSignalsOptions): string[]
 
 /**
  * Registers a handler to be executed during the shutdown process or when a specific signal is received.
+ * Phased handlers are snapshotted when shutdown starts, before any terminating signal-specific handler.
+ * Registrations made after that point are accepted but excluded from the active phased cleanup.
  * @param handler The handler function to execute, which can be async.
  * @param options Options to configure the handler registration.
  * @returns The identifier of the registered handler.
@@ -108,6 +110,8 @@ export function registerHandler(
 
 /**
  * Removes a previously registered handler by its identifier.
+ * During shutdown, removed pending handlers are skipped; an invocation already in progress still completes.
+ * Re-registering the same identifier does not restore its place in the active shutdown snapshot.
  * @param identifier The identifier of the handler to remove.
  * @returns `true` if the handler was successfully removed, `false` otherwise.
  * @example

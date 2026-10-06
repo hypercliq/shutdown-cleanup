@@ -344,6 +344,14 @@ const runShutdown = async (signal, runSignalHandler) => {
   state.isShuttingDown = true
   logger(`Shutting down on ${signal}`)
 
+  // Freeze the work list before any cleanup, including the signal handler.
+  const shutdownPhases = registeredHandlers
+    .keys()
+    .filter((phase) => phase !== 0)
+    .toArray()
+    .toSorted((a, b) => a - b)
+    .map((phase) => [phase, [...registeredHandlers.get(phase)]])
+
   const shutdownTimer = setTimeout(() => {
     console.warn('Shutdown process timed out. Forcing exit.')
     process.exit(state.customExitCode ?? 1) // eslint-disable-line unicorn/no-process-exit
@@ -353,25 +361,21 @@ const runShutdown = async (signal, runSignalHandler) => {
     await runSignalHandler()
   }
 
-  const sortedPhases = registeredHandlers
-    .keys()
-    .filter((phase) => phase !== 0)
-    .toArray()
-    .toSorted((a, b) => a - b)
-
-  for (const phase of sortedPhases) {
-    const phaseHandlers = registeredHandlers.get(phase)
+  for (const [phase, phaseHandlers] of shutdownPhases) {
     for (const [identifier, handlerEntry] of phaseHandlers) {
-      try {
-        await handlerEntry.handler(signal)
-      } catch (error) {
-        console.error(
-          `Error in shutdown handler '${identifier}' for phase '${phase}': ${error}`,
-        )
-        if (state.errorHandlingStrategy === 'stop') {
-          console.error('Stopping shutdown process due to error in handler.')
-          clearTimeout(shutdownTimer)
-          process.exit(state.customExitCode ?? 1) //eslint-disable-line unicorn/no-process-exit
+      // Honor removals; reusing an identifier creates a different registration.
+      if (registeredHandlers.get(phase)?.get(identifier) === handlerEntry) {
+        try {
+          await handlerEntry.handler(signal)
+        } catch (error) {
+          console.error(
+            `Error in shutdown handler '${identifier}' for phase '${phase}': ${error}`,
+          )
+          if (state.errorHandlingStrategy === 'stop') {
+            console.error('Stopping shutdown process due to error in handler.')
+            clearTimeout(shutdownTimer)
+            process.exit(state.customExitCode ?? 1) //eslint-disable-line unicorn/no-process-exit
+          }
         }
       }
     }

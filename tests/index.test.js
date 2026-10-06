@@ -29,6 +29,7 @@ const runShutdownScenario = (source, expectations = {}) =>
         import {
           addSignal,
           registerHandler,
+          removeHandler,
           setCustomExitCode,
           setErrorHandlingStrategy,
           setShutdownTimeout,
@@ -607,6 +608,197 @@ describe('Shutdown-cleanup module', () => {
           ),
         },
       ))
+  })
+
+  describe('Handler mutations during shutdown', () => {
+    it('skips a deleted future phase and continues to later phases', () =>
+      runShutdownScenario(
+        `
+          registerHandler(() => {
+            console.log('phase 1')
+            console.log('removed: ' + removeHandler('pending'))
+          })
+          registerHandler(() => console.log('unexpected phase 2'), {
+            identifier: 'pending', phase: 2,
+          })
+          registerHandler(() => console.log('phase 3'), { phase: 3 })
+          process.emit('beforeExit', 0)
+        `,
+        {
+          stdoutExpectation: expectLines('phase 1', 'removed: true', 'phase 3'),
+        },
+      ))
+
+    it('removes a pending handler within the current phase', () =>
+      runShutdownScenario(
+        `
+          registerHandler(async () => {
+            console.log('first started')
+            await delay(10)
+            console.log('removed: ' + removeHandler('pending'))
+            console.log('first finished')
+          })
+          registerHandler(() => console.log('unexpected pending handler'), {
+            identifier: 'pending',
+          })
+          registerHandler(() => console.log('third'))
+          registerHandler(() => console.log('phase 2'), { phase: 2 })
+          process.emit('beforeExit', 0)
+        `,
+        {
+          stdoutExpectation: expectLines(
+            'first started',
+            'removed: true',
+            'first finished',
+            'third',
+            'phase 2',
+          ),
+        },
+      ))
+
+    it('honors removals from other work while a handler is suspended', () =>
+      runShutdownScenario(
+        `
+          registerHandler(async () => {
+            console.log('first started')
+            queueMicrotask(() => {
+              console.log('removed: ' + removeHandler('pending'))
+            })
+            await delay(10)
+            console.log('first finished')
+          })
+          registerHandler(() => console.log('unexpected pending handler'), {
+            identifier: 'pending',
+          })
+          registerHandler(() => console.log('last'))
+          process.emit('beforeExit', 0)
+        `,
+        {
+          stdoutExpectation: expectLines(
+            'first started',
+            'removed: true',
+            'first finished',
+            'last',
+          ),
+        },
+      ))
+
+    it('allows a sole handler to remove itself without cancelling its invocation', () =>
+      runShutdownScenario(
+        `
+          registerHandler(async () => {
+            console.log('removed: ' + removeHandler('self'))
+            console.log('removed again: ' + removeHandler('self'))
+            await delay(10)
+            console.log('self finished')
+          }, { identifier: 'self' })
+          registerHandler(() => console.log('phase 2'), { phase: 2 })
+          process.emit('beforeExit', 0)
+        `,
+        {
+          stdoutExpectation: expectLines(
+            'removed: true',
+            'removed again: false',
+            'self finished',
+            'phase 2',
+          ),
+        },
+      ))
+
+    it('excludes registrations in completed, current, future and new phases', () =>
+      runShutdownScenario(
+        `
+          registerHandler(() => console.log('phase 3 first'), { phase: 3 })
+          registerHandler(() => console.log('phase 1'), { phase: 1 })
+          registerHandler(async () => {
+            console.log('phase 2 first')
+            await delay(10)
+            for (const phase of [1, 2, 3, 4]) {
+              registerHandler(() => console.log('unexpected new phase ' + phase), {
+                phase,
+              })
+            }
+          }, { phase: 2 })
+          registerHandler(() => console.log('phase 3 second'), { phase: 3 })
+          registerHandler(() => console.log('phase 2 second'), { phase: 2 })
+          process.emit('beforeExit', 0)
+        `,
+        {
+          stdoutExpectation: expectLines(
+            'phase 1',
+            'phase 2 first',
+            'phase 2 second',
+            'phase 3 first',
+            'phase 3 second',
+          ),
+        },
+      ))
+
+    for (const phase of [1, 2, 3]) {
+      it(`excludes a replacement registration in phase ${phase} using the same identifier and function`, () =>
+        runShutdownScenario(
+          `
+            const pending = () => console.log('unexpected replacement')
+            registerHandler(() => {
+              console.log('first')
+              console.log('removed: ' + removeHandler('pending'))
+              registerHandler(pending, { identifier: 'pending', phase: ${phase} })
+            })
+            registerHandler(pending, { identifier: 'pending', phase: ${phase} })
+            registerHandler(() => console.log('last'), { phase: 3 })
+            process.emit('beforeExit', 0)
+          `,
+          { stdoutExpectation: expectLines('first', 'removed: true', 'last') },
+        ))
+    }
+
+    it('does not let self-registering cleanup extend shutdown', () =>
+      runShutdownScenario(
+        `
+          const cleanup = () => {
+            console.log('cleanup')
+            registerHandler(cleanup)
+          }
+          registerHandler(cleanup)
+          process.emit('beforeExit', 0)
+        `,
+        { stdoutExpectation: expectLines('cleanup'), timeoutMs: 2000 },
+      ))
+
+    for (const hasPendingPhase of [false, true]) {
+      it(`snapshots before a terminating signal handler with ${hasPendingPhase ? 'pending phases' : 'no phases'}`, () =>
+        runShutdownScenario(
+          `
+            registerHandler(async () => {
+              console.log('signal started')
+              await delay(10)
+              ${hasPendingPhase ? "console.log('removed: ' + removeHandler('pending'))" : ''}
+              registerHandler(() => console.log('unexpected new phase 1'))
+              registerHandler(() => console.log('unexpected new phase 2'), { phase: 2 })
+              console.log('signal finished')
+            }, { signal: 'beforeExit' })
+            ${
+              hasPendingPhase
+                ? `
+              registerHandler(() => console.log('unexpected pending handler'), {
+                identifier: 'pending',
+              })
+              registerHandler(() => console.log('phase 2'), { phase: 2 })
+            `
+                : ''
+            }
+            process.emit('beforeExit', 0)
+          `,
+          {
+            stdoutExpectation: expectLines(
+              'signal started',
+              ...(hasPendingPhase ? ['removed: true'] : []),
+              'signal finished',
+              ...(hasPendingPhase ? ['phase 2'] : []),
+            ),
+          },
+        ))
+    }
   })
 
   describe('Error handling strategy', () => {
