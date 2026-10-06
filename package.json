@@ -16,6 +16,7 @@
   },
   "scripts": {
     "test": "npm run test:types && npm run test:runtime",
+    "test:release": "node --test tests/release.test.js",
     "test:runtime": "node --test tests/index.test.js tests/subprocess.test.js",
     "test:consumer": "node scripts/test-consumer.js",
     "test:package": "node scripts/test-package.js",
@@ -25,7 +26,7 @@
     "lint:fix": "eslint --fix .",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "check": "npm run format:check && npm run lint && npm run test:types && npm run test:coverage && npm run test:package",
+    "check": "npm run format:check && npm run lint && npm run test:types && npm run test:release && npm run test:coverage && npm run test:package",
     "prepare": "husky"
   },
   "repository": {

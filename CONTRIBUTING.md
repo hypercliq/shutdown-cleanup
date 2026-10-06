@@ -47,3 +47,7 @@ nvm exec 22.0.0 npm run test:consumer -- "./$package_archive"
 Keep `engines.node` tied to consumer runtime requirements. A higher development-toolchain requirement alone does not justify raising it. When updating tools, recheck their locked engine requirements and update `.nvmrc`, CI, and this guide together. Preserve the exact runtime-floor CI entry and the Node 22 type baseline while that runtime remains supported.
 
 This alignment preserves support for every Node.js version already covered by `>=22`; spelling it `>=22.0.0` does not narrow support and needs no breaking release. If a future runtime feature cannot be accommodated with a small compatible fix, dropping any previously supported Node version is a breaking change: document the removed versions and migration requirement in release notes and ship it in a new major release.
+
+## Release workflow and recovery
+
+See [Releasing](RELEASING.md) for publishing, prerelease rules, and recovery. `npm run check` includes the offline release tests.

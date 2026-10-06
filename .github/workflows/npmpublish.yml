@@ -2,19 +2,56 @@ name: Node.js Package
 
 on:
   release:
-    types: [created]
+    types: [published]
+
+# Serialize all versions: cancellation must not interrupt a partial publication.
+permissions:
+  contents: read
+
+concurrency:
+  group: shutdown-cleanup-release
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      dist-tag: ${{ steps.release.outputs.dist-tag }}
+      artifact-name: ${{ steps.archive.outputs.artifact-name }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Validate release metadata
+        id: release
+        run: node scripts/release.js validate
       - run: npm ci --engine-strict
       - run: npm run check
       - run: npm run test:consumer
+      # Retain the validated npm tarball for release recovery.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Pack validated release
+        id: archive
+        run: |
+          echo "artifact-name=release-package-$RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/release"
+          archive=$(npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/release")
+          mv "$RUNNER_TEMP/release/$archive" "$RUNNER_TEMP/release/package.tgz"
+        env:
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.archive.outputs.artifact-name }}
+          path: ${{ runner.temp }}/release/package.tgz
+          if-no-files-found: error
+          retention-days: 30
 
   publish-npm:
     needs: build
@@ -24,30 +61,26 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+          package-manager-cache: false
           registry-url: https://registry.npmjs.org/
-      - run: npm ci --engine-strict
-      - run: npm publish --access public
-
-  publish-gpr:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/download-artifact@v4
         with:
-          node-version: 24
-          registry-url: https://npm.pkg.github.com/
-          scope: '@hypercliq'
-      - run: npm ci --engine-strict
-      - run: npm publish
+          name: ${{ needs.build.outputs.artifact-name }}
+          path: ${{ runner.temp }}/release
+      - name: Publish or verify existing npm version
+        run: node scripts/release.js publish https://registry.npmjs.org/ "$RUNNER_TEMP/release/package.tgz" "$DIST_TAG"
         env:
-          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          DIST_TAG: ${{ needs.build.outputs.dist-tag }}
 
   publish-pages:
-    needs: [publish-npm, publish-gpr]
+    # Deploy stable documentation after validation.
+    needs: build
+    if: needs.build.outputs.dist-tag == 'latest'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,6 +91,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/configure-pages@v6
       - uses: actions/jekyll-build-pages@v1
         with:

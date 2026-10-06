@@ -39,6 +39,18 @@ yarn add @hypercliq/shutdown-cleanup
 pnpm add @hypercliq/shutdown-cleanup
 ```
 
+### GitHub Packages retirement
+
+From **6 October 2026**, new releases are published only to npm. **8.0.3** is the final GitHub Packages release; already-published versions remain available.
+
+If you use GitHub Packages, update your project's `.npmrc` mapping and refresh registry URLs in your lockfile:
+
+```ini
+@hypercliq:registry=https://registry.npmjs.org/
+```
+
+Check other `@hypercliq` dependencies before changing this scope-wide mapping. Version `8.0.0` is available only on GitHub Packages; keep its existing registry or test a compatible npm version.
+
 ## Documentation
 
 Full API reference, phased shutdown examples, signal-specific handlers, error strategies, and best practices in the **[Developer Guide](https://hypercliq.github.io/shutdown-cleanup/DEVGUIDE.html)**.
