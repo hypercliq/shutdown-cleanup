@@ -37,9 +37,9 @@ registerHandler(
 server.listen(3000, '127.0.0.1')
 ```
 
-The Promise waits for HTTP closure; `await server.close()` alone does not. Importing the package installs shutdown listeners immediately. OS trigger behavior varies, especially on Windows; forced termination cannot guarantee cleanup.
+The Promise waits for HTTP closure.
 
-See the **[consumer guide](https://hypercliq.github.io/shutdown-cleanup/DEVGUIDE.html)** ([source](https://github.com/hypercliq/shutdown-cleanup/blob/main/DEVGUIDE.md)) for the API, platform limitations, timeout and exit-code policy, and migration notes, including GitHub Packages retirement. [Contributing and maintaining](https://github.com/hypercliq/shutdown-cleanup/blob/main/CONTRIBUTING.md) covers repository setup and releases.
+See the **[consumer guide](https://hypercliq.github.io/shutdown-cleanup/DEVGUIDE.html)** ([source](https://github.com/hypercliq/shutdown-cleanup/blob/main/DEVGUIDE.md)) for the API, platform limitations, timeout and exit-code policy, and migration notes, including GitHub Packages retirement.
 
 ## License
 

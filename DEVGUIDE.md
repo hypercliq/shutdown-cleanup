@@ -1,6 +1,6 @@
 # Consumer guide
 
-For installation and a runnable HTTP example, see the [homepage](https://hypercliq.github.io/shutdown-cleanup/). The package is ESM-only and requires Node.js >=22.0.0. Examples below illustrate APIs; functions such as `cleanup` represent application code.
+For installation and a runnable HTTP example, see the [homepage](https://hypercliq.github.io/shutdown-cleanup/). Examples below illustrate APIs; functions such as `cleanup` represent application code.
 
 ## Shutdown behavior
 
@@ -21,7 +21,7 @@ A terminating signal-specific handler runs first, followed by the phases, under 
 
 ## Platforms and limitations
 
-Supported release targets are Linux, Windows, and macOS on ARM64 and Intel x64. CI requires the packed package to pass native and portable tests on each target with Node 22.0.0, current 22.x, 24.x, and 26.x. Registering a signal or emitting its name as a process event does not prove native OS delivery; `listSignals()` reports registrations, not platform capabilities.
+Supported release targets are Linux x64, Windows x64, and macOS on ARM64 and Intel x64. Registering a signal or emitting its name as a process event does not prove native OS delivery; `listSignals()` reports registrations, not platform capabilities.
 
 | Trigger                    | Linux / macOS behavior                               | Windows behavior                                                                             |
 | -------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -34,7 +34,7 @@ Supported release targets are Linux, Windows, and macOS on ARM64 and Intel x64. 
 | Ctrl+Break / `SIGBREAK`    | No OS delivery                                       | Opt in with `addSignal` or a signal-specific handler                                         |
 | Forced termination         | No cleanup guarantee, including `SIGKILL`            | No cleanup guarantee, including `TerminateProcess`, `taskkill /F`, and kill emulation        |
 
-Runner coverage does not certify every OS version, terminal, or service host. Terminal raw mode can prevent Ctrl+C signal delivery. Windows services do not automatically receive console events; this package installs no service-control handler. Supervisors, terminal hosts, containers, and OS deadlines can prevent or interrupt cleanup. Test the actual shutdown mechanism your application uses. The package's timeout cannot extend an OS deadline.
+Runner coverage does not certify every OS version, architecture, terminal, or service host. Terminal raw mode can prevent Ctrl+C signal delivery. Windows services do not automatically receive console events; this package installs no service-control handler. Supervisors, terminal hosts, containers, and OS deadlines can prevent or interrupt cleanup. Test the actual shutdown mechanism your application uses. The package's timeout cannot extend an OS deadline.
 
 `beforeExit` fires only when Node has no scheduled work. A listening server, referenced interval, or open connection can prevent it; use a signal or custom event to close resources keeping the loop alive. Explicit `process.exit()` and uncaught exceptions bypass it. The package installs no `exit`, `uncaughtException`, or `unhandledRejection` listeners. An `exit` listener cannot await asynchronous cleanup.
 
