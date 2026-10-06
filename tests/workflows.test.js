@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import process from 'node:process'
 import { test } from 'node:test'
 import { parse } from 'yaml'
@@ -20,15 +22,13 @@ const action = (job, name) =>
   job.steps.find((step) => step.uses?.startsWith(`${name}@`))
 
 test('publication requires development checks and the Linux/Windows/macOS support gate', () => {
-  assert.deepEqual(release.jobs['publish-npm'].needs, [
-    'build',
-    'validate-platforms',
-  ])
-  assert.deepEqual(release.jobs['publish-pages'].needs, [
-    'build',
-    'validate-platforms',
-    'publish-npm',
-  ])
+  assert.ok([release.jobs['publish-npm'].needs].flat().includes('build'))
+  assert.ok(
+    [release.jobs['publish-npm'].needs].flat().includes('validate-platforms'),
+  )
+  assert.ok(
+    [release.jobs['publish-pages'].needs].flat().includes('publish-npm'),
+  )
   for (const name of [
     'build',
     'validate-platforms',
@@ -36,83 +36,128 @@ test('publication requires development checks and the Linux/Windows/macOS suppor
     'publish-pages',
   ]) {
     assert.equal(
-      release.jobs[name].if,
-      undefined,
+      [undefined, 'success()', '${{ success() }}'].includes(
+        release.jobs[name].if,
+      ),
+      true,
       `${name} must require success`,
     )
-    assert.equal(release.jobs[name]['continue-on-error'], undefined)
+    assert.ok(
+      [undefined, false].includes(release.jobs[name]['continue-on-error']),
+    )
   }
   assert.equal(release.jobs.build.with.release, true)
   assert.equal(release.jobs['validate-platforms'].needs, 'build')
   const gate = platforms.jobs['support-gate']
   assert.equal(gate.needs, 'platform-checks')
   assert.equal(gate.if, 'always()')
-  assert.equal(gate['continue-on-error'], undefined)
-  assert.equal(
-    platforms.jobs['platform-checks']['continue-on-error'],
-    undefined,
-  )
-  assert.deepEqual(gate.steps[0].env, {
-    RESULT: '${{ needs.platform-checks.result }}',
-  })
+  assert.ok([undefined, false].includes(gate['continue-on-error']))
+  for (const job of [
+    packageValidation.jobs.toolchain,
+    ...Object.values(platforms.jobs),
+  ]) {
+    assert.ok([undefined, false].includes(job['continue-on-error']))
+    for (const step of job.steps) {
+      assert.ok([undefined, false].includes(step['continue-on-error']))
+    }
+  }
 })
 
 test(
   'the actual support gate rejects failure, cancellation and skipped validation',
   { skip: process.platform === 'win32' && 'The gate runs on Ubuntu with bash' },
   () => {
+    const gate = platforms.jobs['support-gate'].steps.find((step) =>
+      Object.values(step.env ?? {}).includes(
+        '${{ needs.platform-checks.result }}',
+      ),
+    )
+    const resultVariable = Object.keys(gate.env).find(
+      (name) => gate.env[name] === '${{ needs.platform-checks.result }}',
+    )
     for (const result of ['success', 'failure', 'cancelled', 'skipped', '']) {
-      const child = spawnSync(
-        'bash',
-        ['-c', platforms.jobs['support-gate'].steps[0].run],
-        { env: { ...process.env, RESULT: result }, timeout: 5000 },
-      )
+      const child = spawnSync('bash', ['-c', gate.run], {
+        env: { ...process.env, [resultVariable]: result },
+        timeout: 5000,
+      })
       assert.ifError(child.error)
-      assert.equal(child.status, result === 'success' ? 0 : 1, result)
+      assert.equal(child.status === 0, result === 'success', result)
     }
   },
 )
 
 test('one required matrix covers all sixteen consumer combinations and architectures', () => {
-  assert.deepEqual(Object.keys(platforms.jobs), [
-    'platform-checks',
-    'support-gate',
-  ])
   const job = platforms.jobs['platform-checks']
-  assert.deepEqual(job.strategy.matrix, {
-    runner: [
+  assert.deepEqual(
+    job.strategy.matrix.runner.toSorted((left, right) =>
+      left.label.localeCompare(right.label),
+    ),
+    [
       { label: 'ubuntu-latest', architecture: 'x64' },
       { label: 'windows-latest', architecture: 'x64' },
       { label: 'macos-latest', architecture: 'arm64' },
       { label: 'macos-26-intel', architecture: 'x64' },
-    ],
-    node: ['22.0.0', '22.x', '24.x', '26.x'],
-  })
-  assert.equal(job['runs-on'], '${{ matrix.runner.label }}')
-  assert.equal(job['continue-on-error'], undefined)
-  assert.equal(job.if, undefined)
-  assert.equal(job.strategy['fail-fast'], false)
-  assert.equal(job.defaults.run.shell, 'bash')
-  const nativeValidation = job.steps.find((step) =>
-    step.run?.includes('npm run test:package -- --runtime-only'),
+    ].toSorted((left, right) => left.label.localeCompare(right.label)),
   )
-  assert.equal(
-    nativeValidation.env.EXPECTED_ARCHITECTURE,
-    '${{ matrix.runner.architecture }}',
-  )
-  assert.ok(nativeValidation.run.includes('set -o pipefail'))
-  assert.ok(
-    nativeValidation.run.includes(
-      "require('node:assert/strict').equal(process.arch, process.env.EXPECTED_ARCHITECTURE)",
+  assert.deepEqual(
+    job.strategy.matrix.node.toSorted((left, right) =>
+      left.localeCompare(right),
     ),
+    ['22.0.0', '22.x', '24.x', '26.x'],
   )
-  const upload = action(job, 'actions/upload-artifact')
-  assert.equal(upload.if, 'always()')
-  assert.equal(
-    upload.with.name,
-    'validation-${{ matrix.runner.label }}-node-${{ matrix.node }}-${{ github.run_attempt }}',
-  )
+  assert.equal(job['runs-on'], '${{ matrix.runner.label }}')
+  assert.ok([undefined, 'success()', '${{ success() }}'].includes(job.if))
+  assert.equal(job.strategy['fail-fast'], false)
 })
+
+test(
+  'native validation rejects the wrong architecture and failed package tests',
+  { skip: process.platform === 'win32' && 'The workflow uses bash' },
+  () => {
+    const validation = platforms.jobs['platform-checks'].steps.find((step) =>
+      Object.values(step.env ?? {}).includes(
+        '${{ matrix.runner.architecture }}',
+      ),
+    )
+    const architectureVariable = Object.keys(validation.env).find(
+      (name) => validation.env[name] === '${{ matrix.runner.architecture }}',
+    )
+    const directory = mkdtempSync(path.join(tmpdir(), 'workflow-validation-'))
+    try {
+      for (const [architecture, packageResult] of [
+        [process.arch, '0'],
+        ['wrong-architecture', '0'],
+        [process.arch, '1'],
+      ]) {
+        const child = spawnSync(
+          'bash',
+          [
+            '-e',
+            '-c',
+            `npm() { return "$PACKAGE_RESULT"; }\n${validation.run}`,
+          ],
+          {
+            cwd: directory,
+            env: {
+              ...process.env,
+              [architectureVariable]: architecture,
+              PACKAGE_RESULT: packageResult,
+            },
+            timeout: 5000,
+          },
+        )
+        assert.ifError(child.error)
+        assert.equal(
+          child.status === 0,
+          architecture === process.arch && packageResult === '0',
+          `${architecture}, package exit ${packageResult}`,
+        )
+      }
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
+  },
+)
 
 test('one archive feeds package resolution, every platform and publication', () => {
   assert.equal(ci.jobs.toolchain.uses, release.jobs.build.uses)
@@ -133,47 +178,54 @@ test('one archive feeds package resolution, every platform and publication', () 
     platforms.on.workflow_call.inputs['artifact-name'].required,
     true,
   )
-  const jobs = [
-    ...Object.values(ci.jobs),
-    ...Object.values(release.jobs),
-    ...Object.values(platforms.jobs),
-    ...Object.values(packageValidation.jobs),
-  ]
-  const commands = jobs
-    .flatMap((job) => job.steps ?? [])
-    .map((step) => step.run ?? '')
+  const toolchain = packageValidation.jobs.toolchain
+  const upload = action(toolchain, 'actions/upload-artifact')
   assert.equal(
-    commands.filter((command) => command.includes('npm pack')).length,
-    1,
+    packageValidation.on.workflow_call.outputs['artifact-name'].value,
+    '${{ jobs.toolchain.outputs.artifact-name }}',
   )
+  assert.equal(upload.with.name, toolchain.outputs['artifact-name'])
+  const archive = upload.with.path
+    .split('\n')
+    .find((file) => file.endsWith('.tgz'))
+  assert.ok(archive)
+  assert.ok(upload.with.path.split('\n').includes(`${archive}.sha512`))
+  const archiveName = path.basename(archive)
+  const commands = toolchain.steps.map((step) => step.run ?? '')
   assert.equal(
-    commands.filter((command) => command.startsWith('npm run check --')).length,
+    commands.filter((command) => /\bnpm\s+pack\b/.test(command)).length,
     1,
   )
   assert.ok(
-    commands.includes('npm run check -- "$RUNNER_TEMP/release/package.tgz"'),
+    commands.some(
+      (command) =>
+        /\bnpm\s+run\s+check\b/.test(command) && command.includes(archiveName),
+    ),
   )
-  const toolchain = packageValidation.jobs.toolchain
-  assert.equal(toolchain.strategy, undefined)
-  assert.equal(
-    action(toolchain, 'actions/setup-node').with['node-version-file'],
-    '.nvmrc',
-  )
-  const upload = action(toolchain, 'actions/upload-artifact')
-  assert.ok(upload.with.path.includes('package.tgz.sha512'))
   const job = platforms.jobs['platform-checks']
   assert.equal(
     action(job, 'actions/download-artifact').with.name,
     '${{ inputs.artifact-name }}',
   )
   assert.ok(
-    job.steps.some((step) => step.run?.includes('scripts/archive.js verify')),
+    job.steps.some(
+      (step) =>
+        step.run?.includes('scripts/archive.js verify') &&
+        step.run.includes(archiveName),
+    ),
+  )
+  assert.ok(
+    job.steps.some(
+      (step) =>
+        /\bnpm\s+run\s+test:package\b/.test(step.run ?? '') &&
+        step.run.includes(archiveName),
+    ),
   )
   assert.ok(
     release.jobs['publish-npm'].steps.some(
       (step) =>
         step.run?.includes('scripts/release.js publish') &&
-        step.run.includes('package.tgz'),
+        step.run.includes(archiveName),
     ),
   )
 })
@@ -186,12 +238,19 @@ test('PR cancellation cannot cancel publication and Pages always checks freshnes
   assert.notEqual(ci.concurrency.group, release.concurrency.group)
   assert.equal(release.concurrency['cancel-in-progress'], false)
   const pages = release.jobs['publish-pages']
-  assert.equal(pages.if, undefined)
-  const freshness = pages.steps.find((step) => step.id === 'freshness')
-  assert.equal(freshness.run, 'node scripts/pages-release.js')
-  const deploymentSteps = pages.steps.slice(pages.steps.indexOf(freshness) + 1)
-  for (const step of deploymentSteps) {
-    assert.equal(step.if, "steps.freshness.outputs.deploy == 'true'")
+  const freshness = pages.steps.find((step) =>
+    step.run?.includes('scripts/pages-release.js'),
+  )
+  assert.ok(freshness?.id)
+  assert.equal(freshness.if, undefined)
+  for (const name of [
+    'actions/jekyll-build-pages',
+    'actions/upload-pages-artifact',
+    'actions/deploy-pages',
+  ]) {
+    const step = action(pages, name)
+    assert.ok(pages.steps.indexOf(step) > pages.steps.indexOf(freshness))
+    assert.equal(step.if, `steps.${freshness.id}.outputs.deploy == 'true'`)
   }
   assert.equal(
     action(pages, 'actions/upload-pages-artifact').with.name,

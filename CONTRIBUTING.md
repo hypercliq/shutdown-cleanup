@@ -20,7 +20,7 @@ Keep `index.js`, `index.d.ts`, package exports, and `engines.node` aligned. Test
 
 Runtime/signal tests must use child processes; use `tests/subprocess-helper.js` for bounded execution and `tests/test-script.js` for scenarios. Strict NodeNext declaration fixtures live in `tests/types.ts`; reusable package fixtures belong in `scripts/`. Do not commit generated archives or coverage.
 
-Test native OS delivery with `tests/signal-fixture.js`, never substitute `process.emit`. Windows tests require PowerShell and genuine console creation; native failures must fail the test. Give excluded signals explicit reasons in `tests/signal-policy.js`.
+Test native OS delivery with `tests/signal-fixture.js`, never substitute `process.emit`. Windows tests require PowerShell and genuine console creation; native failures must fail the test.
 
 ## Platform validation
 

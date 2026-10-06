@@ -9,7 +9,6 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { runSubprocess } from './subprocess-helper.js'
-import { posixSignals, signalSkipReason } from './signal-policy.js'
 
 const execute = promisify(execFile)
 const fixture = fileURLToPath(new URL('signal-fixture.js', import.meta.url))
@@ -18,6 +17,7 @@ const nativeHarness = fileURLToPath(
 )
 const isWindows = process.platform === 'win32'
 const isPosix = ['linux', 'darwin'].includes(process.platform)
+const posixSignals = ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGUSR2']
 const phases = (signal) => [
   'ready',
   `phase-1-start:${signal}`,
@@ -98,37 +98,31 @@ const runWindows = (signal, mode, action, expected, code, arguments_ = []) =>
   })
 
 describe('Genuine OS signal integration (no process.emit)', () => {
-  describe('Linux/macOS kill delivery', () => {
-    for (const signal of posixSignals) {
-      const modes =
-        signal === 'SIGUSR2'
-          ? ['added', 'specific']
-          : ['default', 'specific', 'restored']
-      for (const mode of modes) {
-        it(
-          `${signal}: ${mode}, awaited ordered cleanup and signal exit code`,
-          { skip: !isPosix && 'POSIX delivery runs only on Linux and macOS.' },
-          () =>
+  describe(
+    'Linux/macOS kill delivery',
+    {
+      skip: !isPosix && 'Requires Linux or macOS native signal delivery.',
+    },
+    () => {
+      for (const signal of posixSignals) {
+        const modes =
+          signal === 'SIGUSR2'
+            ? ['added', 'specific']
+            : ['default', 'specific', 'restored']
+        for (const mode of modes) {
+          it(`${signal}: ${mode}, awaited ordered cleanup and signal exit code`, () =>
             runPosix(
               signal,
               mode,
               mode === 'specific' ? specific(signal) : phases(signal),
-            ),
-        )
+            ))
+        }
       }
-    }
-    it(
-      'uses a custom exit code after real SIGTERM',
-      { skip: !isPosix && 'Requires POSIX SIGTERM.' },
-      () =>
+      it('uses a custom exit code after real SIGTERM', () =>
         runPosix('SIGTERM', 'custom-exit', phases('SIGTERM'), {
           exitCodeExpectation: 42,
-        }),
-    )
-    it(
-      'bounds a hanging signal-specific handler',
-      { skip: !isPosix && 'Requires POSIX SIGTERM.' },
-      () =>
+        }))
+      it('bounds a hanging signal-specific handler', () =>
         runPosix('SIGTERM', 'timeout', ['ready', 'signal-start:SIGTERM'], {
           exitCodeExpectation: 1,
           stderrExpectation: (output) =>
@@ -136,12 +130,8 @@ describe('Genuine OS signal integration (no process.emit)', () => {
               output.toString(),
               'Shutdown process timed out. Forcing exit.\n',
             ),
-        }),
-    )
-    it(
-      'keeps a real non-terminating SIGINT handler repeatable',
-      { skip: !isPosix && 'Requires POSIX signals.' },
-      () =>
+        }))
+      it('keeps a real non-terminating SIGINT handler repeatable', () =>
         runPosix(
           'SIGINT',
           'repeat',
@@ -161,25 +151,13 @@ describe('Genuine OS signal integration (no process.emit)', () => {
             }
             assert.ok(child.kill('SIGTERM'))
           },
-        ),
-    )
-    it(
-      'SIGKILL bypasses all cleanup',
-      {
-        skip: !isPosix && 'Windows forced termination uses native tests below.',
-      },
-      () =>
+        ))
+      it('SIGKILL bypasses all cleanup', () =>
         runPosix('SIGKILL', 'forced', ['ready'], {
           exitCodeExpectation: null, // eslint-disable-line unicorn/no-null
           exitSignalExpectation: 'SIGKILL',
-        }),
-    )
-    it(
-      'SIGKILL interrupts cleanup already running',
-      {
-        skip: !isPosix && 'Windows interruption uses TerminateProcess below.',
-      },
-      () =>
+        }))
+      it('SIGKILL interrupts cleanup already running', () =>
         runPosix(
           'SIGTERM',
           'interrupted',
@@ -193,42 +171,40 @@ describe('Genuine OS signal integration (no process.emit)', () => {
             await waitForOccurrences(journal, 'signal-start:SIGTERM', 1)
             assert.ok(child.kill('SIGKILL'))
           },
-        ),
-    )
-  })
+        ))
+    },
+  )
 
-  describe('Windows native console and termination', () => {
-    const skip =
-      !isWindows &&
-      'Requires native Windows console APIs and PowerShell; no synthetic fallback.'
-    const interruptCases = [
-      ['default', phases('SIGINT'), os.constants.signals.SIGINT],
-      ['specific', specific('SIGINT'), os.constants.signals.SIGINT],
-      ['restored', phases('SIGINT'), os.constants.signals.SIGINT],
-      ['custom-exit', phases('SIGINT'), 42],
-      ['timeout', ['ready', 'signal-start:SIGINT'], 1],
-      ['interrupted', ['ready', 'signal-start:SIGINT'], 99],
-      [
-        'repeat',
+  describe(
+    'Windows native console and termination',
+    {
+      skip: !isWindows && 'Requires Windows console APIs and PowerShell.',
+    },
+    () => {
+      const interruptCases = [
+        ['default', phases('SIGINT'), os.constants.signals.SIGINT],
+        ['specific', specific('SIGINT'), os.constants.signals.SIGINT],
+        ['restored', phases('SIGINT'), os.constants.signals.SIGINT],
+        ['custom-exit', phases('SIGINT'), 42],
+        ['timeout', ['ready', 'signal-start:SIGINT'], 1],
+        ['interrupted', ['ready', 'signal-start:SIGINT'], 99],
         [
-          'ready',
-          'signal-start:SIGINT',
-          'signal-end:SIGINT',
-          'signal-start:SIGINT',
-          'signal-end:SIGINT',
+          'repeat',
+          [
+            'ready',
+            'signal-start:SIGINT',
+            'signal-end:SIGINT',
+            'signal-start:SIGINT',
+            'signal-end:SIGINT',
+          ],
+          99,
         ],
-        99,
-      ],
-    ]
-    for (const [mode, expected, code] of interruptCases) {
-      it(`CTRL_C_EVENT / SIGINT: ${mode}`, { skip }, () =>
-        runWindows('SIGINT', mode, 'control', expected, code),
-      )
-    }
-    it(
-      'CTRL_C_EVENT / SIGINT: clears the inherited Ctrl+C-ignore attribute',
-      { skip },
-      () =>
+      ]
+      for (const [mode, expected, code] of interruptCases) {
+        it(`CTRL_C_EVENT / SIGINT: ${mode}`, () =>
+          runWindows('SIGINT', mode, 'control', expected, code))
+      }
+      it('CTRL_C_EVENT / SIGINT: clears the inherited Ctrl+C-ignore attribute', () =>
         runWindows(
           'SIGINT',
           'default',
@@ -236,39 +212,29 @@ describe('Genuine OS signal integration (no process.emit)', () => {
           phases('SIGINT'),
           os.constants.signals.SIGINT,
           ['-IgnoredCtrlC'],
-        ),
-    )
-    for (const mode of ['added', 'specific']) {
-      it(`CTRL_BREAK_EVENT / SIGBREAK: ${mode} (opt-in)`, { skip }, () =>
-        runWindows(
-          'SIGBREAK',
-          mode,
-          'control',
-          mode === 'specific' ? specific('SIGBREAK') : phases('SIGBREAK'),
-          os.constants.signals.SIGBREAK,
-        ),
-      )
-    }
-    it(
-      'WM_CLOSE / SIGHUP: short async cleanup within the OS deadline',
-      { skip },
-      () =>
+        ))
+      for (const mode of ['added', 'specific']) {
+        it(`CTRL_BREAK_EVENT / SIGBREAK: ${mode} (opt-in)`, () =>
+          runWindows(
+            'SIGBREAK',
+            mode,
+            'control',
+            mode === 'specific' ? specific('SIGBREAK') : phases('SIGBREAK'),
+            os.constants.signals.SIGBREAK,
+          ))
+      }
+      it('WM_CLOSE / SIGHUP: short async cleanup within the OS deadline', () =>
         runWindows(
           'SIGHUP',
           'default',
           'close',
           phases('SIGHUP'),
           os.constants.signals.SIGHUP,
-        ),
-    )
-    it('TerminateProcess bypasses all cleanup', { skip }, () =>
-      runWindows('SIGTERM', 'forced', 'terminate', ['ready'], 99),
-    )
-    for (const signal of ['SIGTERM', 'SIGINT', 'SIGKILL']) {
-      it(
-        `process.kill(${signal}) forcibly terminates without cleanup`,
-        { skip },
-        () =>
+        ))
+      it('TerminateProcess bypasses all cleanup', () =>
+        runWindows('SIGTERM', 'forced', 'terminate', ['ready'], 99))
+      for (const signal of ['SIGTERM', 'SIGINT', 'SIGKILL']) {
+        it(`process.kill(${signal}) forcibly terminates without cleanup`, () =>
           withJournal(async (journal) => {
             await runSubprocess({
               arguments_: [fixture, signal, 'forced', journal],
@@ -276,21 +242,20 @@ describe('Genuine OS signal integration (no process.emit)', () => {
               exitCodeExpectation: 1,
             })
             assert.deepStrictEqual(await journalLines(journal), ['ready'])
-          }),
-      )
-    }
-    it('taskkill /F bypasses all cleanup', { skip }, () =>
-      withJournal(async (journal) => {
-        await runSubprocess({
-          arguments_: [fixture, 'SIGTERM', 'forced', journal],
-          onReady: (child) =>
-            execute('taskkill.exe', ['/PID', String(child.pid), '/F']),
-          exitCodeExpectation: 1,
-        })
-        assert.deepStrictEqual(await journalLines(journal), ['ready'])
-      }),
-    )
-  })
+          }))
+      }
+      it('taskkill /F bypasses all cleanup', () =>
+        withJournal(async (journal) => {
+          await runSubprocess({
+            arguments_: [fixture, 'SIGTERM', 'forced', journal],
+            onReady: (child) =>
+              execute('taskkill.exe', ['/PID', String(child.pid), '/F']),
+            exitCodeExpectation: 1,
+          })
+          assert.deepStrictEqual(await journalLines(journal), ['ready'])
+        }))
+    },
+  )
 
   it('explicit process.exit bypasses beforeExit cleanup on every platform', () =>
     withJournal(async (journal) => {
@@ -300,15 +265,4 @@ describe('Genuine OS signal integration (no process.emit)', () => {
       })
       assert.deepStrictEqual(await journalLines(journal), ['ready'])
     }))
-
-  describe('Excluded blanket-enumeration cases (each skip has a reason)', () => {
-    for (const signal of Object.keys(os.constants.signals)) {
-      if (isPosix && posixSignals.includes(signal)) continue
-      it(
-        `kill-based enumeration: ${signal}`,
-        { skip: signalSkipReason(signal, process.platform) },
-        () => {},
-      )
-    }
-  })
 })
