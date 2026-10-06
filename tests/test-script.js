@@ -209,21 +209,6 @@ const handlePhaseHandling = (phaseType) => {
 }
 
 switch (flag) {
-  case '--handle-default-signal': {
-    {
-      const defaultSignal = rest[0]
-      registerHandler(async () => {
-        console.log(`Handled default signal: ${defaultSignal}`)
-      })
-
-      defaultSignal === 'beforeExit'
-        ? process.emit(defaultSignal, 0)
-        : process.kill(process.pid, defaultSignal)
-    }
-
-    break
-  }
-
   case '--list-default-signals': {
     {
       const defaultSignals = listSignals()
@@ -235,24 +220,6 @@ switch (flag) {
 
   case '--register-handler': {
     handleHandlerRegistration(rest[0], rest.slice(1))
-
-    break
-  }
-
-  case '--handle-posix-signal': {
-    {
-      const signal = rest[0]
-      registerHandler(
-        async () => {
-          console.log(`Handled signal: ${signal}`)
-        },
-        {
-          signal,
-        },
-      )
-
-      process.kill(process.pid, signal)
-    }
 
     break
   }
@@ -298,7 +265,7 @@ switch (flag) {
           },
           {
             identifier: 'failingSignalHandler',
-            signal: 'SIGTERM',
+            signal: 'app:shutdown',
           },
         )
         registerHandler(
@@ -309,7 +276,8 @@ switch (flag) {
             identifier: 'handlerAfterFailedSignalHandler',
           },
         )
-        process.kill(process.pid, 'SIGTERM')
+        addSignal('app:shutdown')
+        process.emit('app:shutdown', 1)
       } else {
         registerHandler(
           () => {
@@ -348,7 +316,8 @@ switch (flag) {
             setTimeout(resolve, delay)
           }),
       )
-      process.kill(process.pid, 'SIGTERM')
+      addSignal('app:shutdown')
+      process.emit('app:shutdown', 1)
     }
 
     break

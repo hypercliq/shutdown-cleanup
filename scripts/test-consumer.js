@@ -63,7 +63,12 @@ try {
   )
   execFileSync(
     process.execPath,
-    ['--test', 'tests/index.test.js', 'tests/subprocess.test.js'],
+    [
+      '--test',
+      'tests/index.test.js',
+      'tests/subprocess.test.js',
+      'tests/signals.test.js',
+    ],
     { cwd: consumerDirectory, stdio: 'inherit' },
   )
 } finally {

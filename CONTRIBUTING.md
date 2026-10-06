@@ -12,7 +12,7 @@ npm run check
 npm run test:consumer
 ```
 
-`npm run check` covers formatting, lint, types, release-policy tests, runtime coverage, and the packed-package check. `npm run test:consumer` installs a packed tarball into a temporary ESM project and runs runtime tests through its public exports. CI also checks that package on Node.js 22.0.0, current 22.x, and current 24.x.
+`npm run check` covers formatting, lint, types, release-policy tests, runtime coverage, and the packed-package check. `npm run test:consumer` installs a packed tarball into a temporary ESM project and runs runtime tests through its public exports. CI validates Linux and Windows on Node.js 22.0.0, current 22.x, 24.x and 26.x, with dedicated macOS candidate validation on both ARM64 and Intel x64 across the same Node versions. See [platform validation policy](SUPPORT.md) for evidence requirements and support gaps.
 
 ## Repository map
 
@@ -25,6 +25,8 @@ npm run test:consumer
 ## Tests and fixtures
 
 Keep process behavior tests isolated in child processes: importing the package attaches process listeners, and signal/exit tests can affect the test runner. Use `tests/subprocess-helper.js` for bounded subprocess execution and `tests/test-script.js` for child scenarios. Keep TypeScript declaration fixtures in `tests/types.ts`; `npm run test:types` checks them with strict NodeNext settings. Put reusable package-consumer fixtures in `scripts/` and keep generated archives and coverage output out of source control.
+
+`npm run test:portable` covers custom events and lifecycle behavior; `npm run test:signals` covers real OS delivery using `tests/signal-fixture.js`. Use custom events for portable shutdown tests. Never substitute `process.emit` for native integration. On Windows the signal suite requires Windows PowerShell and genuine console creation; failure to use native APIs is a failing required test. Every signal excluded from integration enumeration has a reported reason in `tests/signal-policy.js`.
 
 ## Public API compatibility
 

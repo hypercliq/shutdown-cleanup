@@ -106,6 +106,27 @@ describe('Subprocess test helper', () => {
     )
   })
 
+  it('requires a readiness message when native delivery is requested', async () => {
+    await assert.rejects(
+      runSubprocess({ arguments_: ['--eval', ''], onReady: () => {} }),
+      /Subprocess never became ready/,
+    )
+  })
+
+  it('rejects a failed asynchronous native action even after the child exits', async () => {
+    const failure = new Error('native trigger failed')
+    await assert.rejects(
+      runSubprocess({
+        arguments_: ['--eval', "process.send('ready'); process.disconnect()"],
+        onReady: async () => {
+          await new Promise((resolve) => setTimeout(resolve, 50))
+          throw failure
+        },
+      }),
+      (error) => error === failure,
+    )
+  })
+
   it('rejects synchronous spawn failures', async () => {
     const error = new Error('synchronous spawn failure')
     await assert.rejects(

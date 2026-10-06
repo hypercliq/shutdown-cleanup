@@ -10,6 +10,8 @@ export const runSubprocess = (
     stdoutExpectation = expectEmpty,
     stderrExpectation = expectEmpty,
     exitCodeExpectation = 0,
+    exitSignalExpectation = null, // eslint-disable-line unicorn/no-null
+    onReady,
     timeoutMs = 10_000,
     debug = false,
   },
@@ -23,14 +25,14 @@ export const runSubprocess = (
       'Subprocess timeout must be a positive 32-bit integer',
     )
 
-    const child = spawnChild(
-      process.execPath,
-      arguments_,
-      debug ? { env: { ...process.env, DEBUG: 'shutdown-cleanup' } } : {},
-    )
+    const child = spawnChild(process.execPath, arguments_, {
+      ...(debug && { env: { ...process.env, DEBUG: 'shutdown-cleanup' } }),
+      ...(onReady && { stdio: ['ignore', 'pipe', 'pipe', 'ipc'] }),
+    })
     const stdoutChunks = []
     const stderrChunks = []
     let isSettled = false
+    let readyWork
 
     const fail = (error) => {
       if (isSettled) return
@@ -61,6 +63,18 @@ export const runSubprocess = (
     child.on('error', (error) =>
       fail(new Error('Subprocess spawn/process failure', { cause: error })),
     )
+    if (onReady) {
+      child.once('message', (message) => {
+        readyWork = (async () => {
+          try {
+            assert.strictEqual(message, 'ready')
+            await onReady(child)
+          } catch (error) {
+            fail(error)
+          }
+        })()
+      })
+    }
     for (const [name, chunks] of [
       ['stdout', stdoutChunks],
       ['stderr', stderrChunks],
@@ -76,15 +90,17 @@ export const runSubprocess = (
 
     // Unlike 'exit', 'close' waits for both output streams to close. Always run
     // both expectations, including on empty output, so silence cannot pass.
-    child.once('close', (code, signal) => {
+    child.once('close', async (code, signal) => {
+      await readyWork
       if (isSettled) return
       isSettled = true
       clearTimeout(watchdog)
       try {
+        if (onReady) assert.ok(readyWork, 'Subprocess never became ready')
         stdoutExpectation(Buffer.concat(stdoutChunks))
         stderrExpectation(Buffer.concat(stderrChunks))
         assert.strictEqual(code, exitCodeExpectation)
-        assert.strictEqual(signal, null) // eslint-disable-line unicorn/no-null
+        assert.strictEqual(signal, exitSignalExpectation)
         resolve()
       } catch (error) {
         reject(error)

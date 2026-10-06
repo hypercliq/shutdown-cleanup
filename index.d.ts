@@ -4,6 +4,9 @@
  * listeners remain attached. Shutdown explicitly calls process.exit after cleanup.
  * beforeExit requires a drained event loop; open servers can prevent it. Explicit
  * process.exit and uncaught exceptions bypass it; exit cannot await async cleanup.
+ * Native delivery depends on the OS: Windows kill(SIGTERM) is forced termination;
+ * Ctrl+C delivers SIGINT, Ctrl+Break requires opt-in SIGBREAK, and console closure
+ * gives SIGHUP only a limited OS deadline. Forced termination cannot guarantee cleanup.
  * DEBUG is read at import time: a value containing "shutdown-cleanup" or exactly
  * "*" enables console.debug logging (not debug-package namespace matching).
  * The @example snippets are schematic API usage and assume named functions have
@@ -91,6 +94,8 @@ export interface ListSignalsOptions {
 
 /**
  * Adds a new signal to be listened for, initiating the shutdown process when received.
+ * Listener registration does not imply native OS delivery. Attachment failure throws
+ * without changing the registered signal list. Custom events require application emission.
  * @param signal The name of the signal to add.
  * @returns `true` if the signal was added successfully, `false` if it was already present or has a specific handler.
  * @example
@@ -111,6 +116,7 @@ export function listHandlers(): PhaseEntry[]
 /**
  * Lists this module's general shutdown signals/events; excludes signal-specific
  * registrations unless includeSignalHandlers is true (including non-terminating ones).
+ * Lists registrations, not the current OS's native signal capabilities.
  * @param options Optional parameter to include signals from signal-specific handlers.
  * @returns An array of signal names.
  * @example

@@ -51,8 +51,14 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  publish-npm:
+  validate-platforms:
     needs: build
+    uses: ./.github/workflows/platform-validation.yml
+    with:
+      artifact-name: ${{ needs.build.outputs.artifact-name }}
+
+  publish-npm:
+    needs: [build, validate-platforms]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -76,7 +82,7 @@ jobs:
           DIST_TAG: ${{ needs.build.outputs.dist-tag }}
 
   publish-pages:
-    needs: build
+    needs: [build, validate-platforms]
     if: needs.build.outputs.dist-tag == 'latest'
     runs-on: ubuntu-latest
     permissions:

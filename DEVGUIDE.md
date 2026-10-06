@@ -17,6 +17,8 @@ The module supports:
 
 The package is ESM-only and supports Node.js 22.0.0 and newer. This is the consumer runtime minimum; repository development tools require a newer version, as described in [Contributing](https://github.com/hypercliq/shutdown-cleanup/blob/main/CONTRIBUTING.md).
 
+See the [platform support table](README.md#platform-support) and [validation policy](SUPPORT.md) before choosing an OS shutdown trigger. Linux and Windows validation is required for release; macOS is a candidate until its dedicated checks pass. Windows has no graceful OS `SIGTERM`: `process.kill` emulation forcibly terminates. Ctrl+C uses native `SIGINT`; Ctrl+Break requires opting in to `SIGBREAK`. Console closure can deliver `SIGHUP`, but the OS can terminate the process before the package's shutdown deadline. Forced termination never guarantees cleanup.
+
 ## Quick Start
 
 Register cleanup work with `registerHandler`. Handlers run when one of the default shutdown signals is received.
@@ -149,6 +151,8 @@ removeSignal('SIGHUP')
 ```
 
 `SIGKILL` and `SIGSTOP` cannot be handled and will throw if you try to add or register them.
+
+Registering a signal name does not establish OS delivery. `listSignals()` reports registrations, not platform capabilities. If `addSignal()` cannot attach a listener, it throws without recording an active signal. Custom process events are portable and require the application to emit them.
 
 `beforeExit` is already registered by default. You do not need to add it unless you previously removed it. It only fires when Node has no more scheduled work: a listening server, referenced interval, or open connection can prevent it. It is not a way to close resources that themselves keep the event loop alive. It does not run on explicit `process.exit()` or uncaught exceptions, and this module does not install `exit`, `uncaughtException`, or `unhandledRejection` listeners. Adding `exit` cannot make asynchronous cleanup reliable because Node permits only synchronous work there. See [Node.js process events](https://nodejs.org/api/process.html#process-events).
 
@@ -415,7 +419,9 @@ registerHandler(() => console.log('HTTP server closed'), { phase: 2 })
 server.listen(0, '127.0.0.1')
 await once(server, 'listening')
 console.log(`Listening at http://127.0.0.1:${server.address().port}`)
-console.log(`Send SIGTERM to PID ${process.pid}, or press Ctrl+C`)
+console.log(
+  `Press Ctrl+C to shut down (POSIX also supports SIGTERM to PID ${process.pid})`,
+)
 ```
 
 Open the printed URL, then press Ctrl+C, or run `kill -TERM <printed-pid>` in a second terminal on POSIX systems. Phase 1 stops accepting new connections and waits for the HTTP close callback; phase 2 runs only after closure. The wrapper preserves `server` as the receiver and rejects callback errors. This example uses `stop` so a closure error skips the success message. Its custom code of `0` overrides even errors and timeout; remove that setting if you want the default policy.
@@ -511,4 +517,4 @@ Replace the old `registerSignalHandler` import with `registerHandler`. For exist
 - Prefer asynchronous I/O cleanup over long synchronous work.
 - Avoid calling `process.exit()` inside handlers unless you intentionally want to bypass later cleanup.
 - Use explicit handler identifiers in production services so logs are meaningful.
-- Test shutdown behavior with the same signals your process manager sends, usually `SIGTERM`.
+- Test shutdown behavior with the actual trigger your process manager sends: usually `SIGTERM` on POSIX, or native console events/custom shutdown requests on Windows. Forced Windows termination cannot run graceful cleanup.

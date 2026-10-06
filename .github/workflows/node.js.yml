@@ -9,32 +9,15 @@ on:
     types: [checks_requested]
 
 jobs:
-  runtime:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: ['22.0.0', 22.x, 24.x]
-
-    steps:
-      - uses: actions/checkout@v7
-      - name: Use packaging toolchain
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24.x
-      - run: npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP"
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v7
-        with:
-          node-version: ${{ matrix.node-version }}
-      - run: npm run test:consumer -- "$RUNNER_TEMP"/hypercliq-shutdown-cleanup-*.tgz
+  platforms:
+    uses: ./.github/workflows/platform-validation.yml
 
   toolchain:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: ['22.22.1', 24.x]
+        node-version: ['22.22.1', 24.x, 26.x]
 
     steps:
       - uses: actions/checkout@v7

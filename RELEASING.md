@@ -6,9 +6,10 @@ New releases publish to npm only. Existing GitHub Packages versions remain avail
 
 1. Update `package.json` and both root version entries in `package-lock.json`.
 2. Run `npm run check` and `npm run test:consumer`.
-3. Tag the checked commit `v<version>` and publish its GitHub release.
+3. Require a successful Linux/Windows platform validation matrix on the intended revision: Node 22.0.0, current 22.x, 24.x and 26.x. Inspect native Windows console and forced-termination results, not just portable-event results. macOS remains a candidate until all eight dedicated ARM64/Intel x64 jobs pass and the [support policy](SUPPORT.md) is promoted.
+4. Tag the checked commit `v<version>` and publish its GitHub release only with explicit user authorization.
 
-The workflow validates tag and manifest consistency before publishing. Stable versions use `latest`; versions with a prerelease suffix must be marked as GitHub prereleases and use `next`. Build metadata is not supported. Promotion requires a new stable version. Only stable releases deploy Pages.
+The workflow validates tag and manifest consistency before publishing. After building, it validates the exact release tarball on the full Linux/Windows matrix; both npm publication and Pages deployment require that gate. Exploratory macOS failures are retained but do not block release while macOS is unclaimed. Stable versions use `latest`; versions with a prerelease suffix must be marked as GitHub prereleases and use `next`. Build metadata is not supported. Promotion requires a new stable version. Only stable releases deploy Pages.
 
 ## npm configuration
 

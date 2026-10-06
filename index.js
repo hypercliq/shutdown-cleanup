@@ -302,8 +302,8 @@ const addSignal = (signal) => {
     }
   }
 
-  signals.add(signal)
   attachListener(signal)
+  signals.add(signal)
   logger(`Added signal: ${signal}`)
   return true
 }

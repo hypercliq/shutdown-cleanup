@@ -2,12 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import url from 'node:url'
-import os from 'node:os'
 import { runSubprocess } from './subprocess-helper.js'
-
-const nodejsSignals = Object.keys(os.constants.signals).filter(
-  (signal) => !['SIGKILL', 'SIGSTOP'].includes(signal),
-)
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 const testScriptPath = path.join(__dirname, 'test-script.js')
@@ -32,10 +27,13 @@ const runShutdownScenario = (source, expectations = {}) =>
           listSignals,
           registerHandler,
           removeHandler,
+          removeSignal,
           setCustomExitCode,
           setErrorHandlingStrategy,
           setShutdownTimeout,
         } from '@hypercliq/shutdown-cleanup'
+        addSignal('app:shutdown')
+        addSignal('app:interrupt')
         ${source}
       `,
     ],
@@ -79,7 +77,7 @@ const expectLines =
   (output) =>
     assert.strictEqual(output.toString(), lines.join('\n') + '\n')
 
-describe('Shutdown-cleanup module', () => {
+describe('Portable process events and API (no OS signal delivery)', () => {
   describe('Handler Registration', () => {
     it('should leave registry and listeners unchanged for invalid handlers', () =>
       runRegistrationValidationScenario(`
@@ -442,41 +440,6 @@ describe('Shutdown-cleanup module', () => {
         exitCodeExpectation: 0,
       })
     })
-
-    for (const testSignal of defaultSignals) {
-      it(`should handle default signal ${testSignal} correctly`, () => {
-        return spawnChildAndSetupListeners({
-          arguments_: ['--handle-default-signal', testSignal],
-          stdoutExpectation: (output) =>
-            assert.strictEqual(
-              output.toString().trim(),
-              `Handled default signal: ${testSignal}`,
-            ),
-          stderrExpectation: (output) =>
-            assert.strictEqual(output.toString(), ''),
-          exitCodeExpectation:
-            testSignal === 'beforeExit' ? 0 : os.constants.signals[testSignal],
-        })
-      })
-    }
-  })
-
-  describe('POSIX signal handling', () => {
-    for (const testSignal of nodejsSignals) {
-      it(`should handle POSIX signal ${testSignal} correctly`, () => {
-        return spawnChildAndSetupListeners({
-          arguments_: ['--handle-posix-signal', testSignal],
-          stdoutExpectation: (output) =>
-            assert.strictEqual(
-              output.toString().trim(),
-              `Handled signal: ${testSignal}`,
-            ),
-          stderrExpectation: (output) =>
-            assert.strictEqual(output.toString(), ''),
-          exitCodeExpectation: os.constants.signals[testSignal],
-        })
-      })
-    }
   })
 
   describe('Node lifecycle events', () => {
@@ -524,6 +487,28 @@ describe('Shutdown-cleanup module', () => {
   })
 
   describe('Custom signals and events', () => {
+    it('leaves addSignal state unchanged after listener attachment fails', () =>
+      runShutdownScenario(`
+        import assert from 'node:assert/strict'
+        const originalOn = process.on
+        const before = listSignals()
+        const failure = new Error('unsupported signal attachment')
+        process.on = function (event, listener) {
+          if (event === 'failed-event') throw failure
+          return originalOn.call(this, event, listener)
+        }
+        try {
+          assert.throws(() => addSignal('failed-event'), error => error === failure)
+          assert.deepStrictEqual(listSignals(), before)
+          assert.equal(process.listenerCount('failed-event'), 0)
+          assert.equal(removeSignal('failed-event'), false)
+        } finally {
+          process.on = originalOn
+        }
+        assert.equal(addSignal('failed-event'), true)
+        assert.equal(removeSignal('failed-event'), true)
+      `))
+
     it('should add and remove a signal', () => {
       return spawnChildAndSetupListeners({
         arguments_: ['--add-remove-signal', 'SIGUSR2'],
@@ -576,7 +561,7 @@ describe('Shutdown-cleanup module', () => {
   })
 
   describe('Coordinated signal shutdown', () => {
-    for (const signal of ['SIGTERM', 'beforeExit']) {
+    for (const signal of ['app:shutdown', 'beforeExit']) {
       for (const customExitCode of [undefined, 42]) {
         it(`times out a never-settling ${signal} handler with exit code ${customExitCode ?? 1}`, () =>
           runShutdownScenario(
@@ -610,13 +595,13 @@ describe('Shutdown-cleanup module', () => {
             console.log('signal started')
             await delay(300)
             console.log('signal finished')
-          }, { signal: 'SIGTERM', shouldTerminate: true })
+          }, { signal: 'app:shutdown', shouldTerminate: true })
           registerHandler(async () => {
             console.log('phase started')
             await delay(300)
             console.log('unexpected phase completion')
           })
-          process.emit('SIGTERM', 'SIGTERM')
+          process.emit('app:shutdown', 'app:shutdown')
         `,
         {
           stdoutExpectation: expectLines(
@@ -632,8 +617,8 @@ describe('Shutdown-cleanup module', () => {
       ))
 
     for (const competingEvent of [
-      'SIGTERM',
-      'SIGINT',
+      'app:shutdown',
+      'app:interrupt',
       'beforeExit',
       'app:other',
     ]) {
@@ -648,7 +633,7 @@ describe('Shutdown-cleanup module', () => {
               if (++calls === 1) compete()
               await delay(20)
               console.log('signal finished: ' + value)
-            }, { signal: 'SIGTERM' })
+            }, { signal: 'app:shutdown' })
             registerHandler(() => console.log('unexpected other handler'), {
               signal: 'app:other', shouldTerminate: true,
             })
@@ -660,17 +645,17 @@ describe('Shutdown-cleanup module', () => {
             registerHandler((value) => console.log('phase 2: ' + value), {
               phase: 2,
             })
-            process.emit('SIGTERM', 'SIGTERM')
+            process.emit('app:shutdown', 'app:shutdown')
             compete()
           `,
           {
             stdoutExpectation: expectLines(
-              'signal started: SIGTERM',
-              'signal finished: SIGTERM',
-              'phase 1: SIGTERM',
-              'phase 2: SIGTERM',
+              'signal started: app:shutdown',
+              'signal finished: app:shutdown',
+              'phase 1: app:shutdown',
+              'phase 2: app:shutdown',
             ),
-            exitCodeExpectation: os.constants.signals.SIGTERM,
+            exitCodeExpectation: 1,
           },
         ))
     }
@@ -679,23 +664,23 @@ describe('Shutdown-cleanup module', () => {
       runShutdownScenario(
         `
           registerHandler(() => console.log('unexpected signal handler'), {
-            signal: 'SIGTERM',
+            signal: 'app:shutdown',
           })
           registerHandler(async (value) => {
             console.log('phase started: ' + value)
-            process.emit('SIGTERM', 'SIGTERM')
+            process.emit('app:shutdown', 'app:shutdown')
             await delay(20)
             console.log('phase finished: ' + value)
           })
-          process.emit('SIGINT', 'SIGINT')
-          process.emit('SIGTERM', 'SIGTERM')
+          process.emit('app:interrupt', 'app:interrupt')
+          process.emit('app:shutdown', 'app:shutdown')
         `,
         {
           stdoutExpectation: expectLines(
-            'phase started: SIGINT',
-            'phase finished: SIGINT',
+            'phase started: app:interrupt',
+            'phase finished: app:interrupt',
           ),
-          exitCodeExpectation: os.constants.signals.SIGINT,
+          exitCodeExpectation: 1,
         },
       ))
 
@@ -706,7 +691,7 @@ describe('Shutdown-cleanup module', () => {
           registerHandler(async (value) => {
             console.log('beforeExit started: ' + value)
             process.emit('beforeExit', 99)
-            process.emit('SIGTERM', 'SIGTERM')
+            process.emit('app:shutdown', 'app:shutdown')
             await delay(20)
             console.log('beforeExit finished: ' + value)
           }, { signal: 'beforeExit' })
@@ -775,21 +760,21 @@ describe('Shutdown-cleanup module', () => {
             const work = delay(100).then(() => console.log('repeat finished: ' + call))
             pending.push(work)
             return work
-          }, { signal: 'SIGTERM', shouldTerminate: false })
-          process.emit('SIGTERM', 'SIGTERM')
-          process.emit('SIGTERM', 'SIGTERM')
+          }, { signal: 'app:shutdown', shouldTerminate: false })
+          process.emit('app:shutdown', 'app:shutdown')
+          process.emit('app:shutdown', 'app:shutdown')
           await Promise.all(pending)
           console.log('still running')
           setShutdownTimeout(1000)
           registerHandler(async () => {
             // Non-terminating handlers remain repeatable during shutdown too.
-            process.emit('SIGTERM', 'SIGTERM')
-            process.emit('SIGTERM', 'SIGTERM')
+            process.emit('app:shutdown', 'app:shutdown')
+            process.emit('app:shutdown', 'app:shutdown')
             await Promise.all(pending)
             console.log('phase finished')
           })
-          addSignal('app:shutdown')
-          process.emit('app:shutdown', 0, 'extra event argument')
+          addSignal('app:finish')
+          process.emit('app:finish', 0, 'extra event argument')
         `,
         {
           stdoutExpectation: expectLines(
@@ -1041,7 +1026,7 @@ describe('Shutdown-cleanup module', () => {
             output.toString().trim(),
             "Error in handler 'failingSignalHandler': Error: Something went wrong",
           ),
-        exitCodeExpectation: os.constants.signals.SIGTERM,
+        exitCodeExpectation: 1,
       })
     })
 

@@ -5,7 +5,24 @@
 [![CI](https://github.com/hypercliq/shutdown-cleanup/actions/workflows/node.js.yml/badge.svg)](https://github.com/hypercliq/shutdown-cleanup/actions/workflows/node.js.yml)
 [![license](https://img.shields.io/npm/l/@hypercliq/shutdown-cleanup)](LICENSE)
 
-Phased graceful shutdown for Node.js — register async cleanup handlers that run in order when your process receives `SIGTERM`, `SIGINT`, `SIGHUP`, or `beforeExit`.
+Phased graceful shutdown for Node.js — register async cleanup handlers that run in order on shutdown signals, custom process events, or `beforeExit`. OS signal delivery depends on the platform.
+
+## Platform support
+
+Linux and Windows are required release targets: publication requires their entire native validation matrix to pass against the release tarball. macOS is a candidate, **not an official support claim**, until all eight dedicated jobs across **ARM64 and Intel x64** pass and the support documentation is explicitly promoted. This checkout has Linux validation available locally; Windows and macOS runner results are still pending. See [validation policy and support gaps](https://github.com/hypercliq/shutdown-cleanup/blob/main/SUPPORT.md).
+
+| Shutdown trigger              | Linux                    | Windows                             | macOS candidate          | Limitations                                                                                                                                                    |
+| ----------------------------- | ------------------------ | ----------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Custom process event          | Yes                      | Yes                                 | Under validation         | Register with `addSignal` or a signal-specific handler, then emit it in the application; this does not simulate OS integration.                                |
+| Natural `beforeExit`          | Yes                      | Yes                                 | Under validation         | Event loop must drain; open servers/intervals prevent it. Explicit `process.exit()` and uncaught exceptions bypass it.                                         |
+| Terminal Ctrl+C / `SIGINT`    | Yes                      | Native validation required          | Under validation         | Windows uses `CTRL_C_EVENT`; terminal raw mode can prevent Ctrl+C from becoming a signal.                                                                      |
+| OS `SIGTERM`                  | Yes                      | **No**                              | Under validation         | Windows `process.kill(pid, 'SIGTERM')` forcibly terminates; registering a listener does not make it graceful.                                                  |
+| OS `SIGHUP` / console closure | Yes                      | Limited; native validation required | Under validation         | Windows console closure delivers `SIGHUP` but imposes a short OS deadline (Node documents about 10 seconds). The package's 30-second default cannot extend it. |
+| `SIGUSR2`                     | Opt-in                   | **No OS delivery**                  | Under validation, opt-in | Call `addSignal('SIGUSR2')` or register a signal-specific handler on POSIX.                                                                                    |
+| Ctrl+Break / `SIGBREAK`       | No OS delivery           | Opt-in; native validation required  | No OS delivery           | Call `addSignal('SIGBREAK')` or register a signal-specific handler; it is not a default trigger.                                                               |
+| Forced termination            | **No cleanup guarantee** | **No cleanup guarantee**            | **No cleanup guarantee** | Includes `SIGKILL`, `TerminateProcess`, `taskkill /F`, and Windows kill emulation. Execution may stop before any cleanup or interrupt cleanup already running. |
+
+The package still accepts other process event names; listener registration alone does not establish native signal support. The actively validated Node lines are 22.x, 24.x and 26.x, plus the consumer minimum 22.0.0. Other Node versions satisfying `>=22.0.0` are not separately certified by this matrix.
 
 ## Quick start
 
@@ -43,7 +60,9 @@ registerHandler(() => console.log('HTTP server closed'), { phase: 2 })
 server.listen(0, '127.0.0.1')
 await once(server, 'listening')
 console.log(`Listening at http://127.0.0.1:${server.address().port}`)
-console.log(`Send SIGTERM to PID ${process.pid}, or press Ctrl+C`)
+console.log(
+  `Press Ctrl+C to shut down (POSIX also supports SIGTERM to PID ${process.pid})`,
+)
 ```
 
 Node's HTTP `server.close()` returns the server, not a Promise. The wrapper waits for its callback before phase 2 runs. See [Node.js HTTP closure semantics](https://nodejs.org/api/http.html#serverclosecallback).
