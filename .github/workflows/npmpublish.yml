@@ -4,7 +4,6 @@ on:
   release:
     types: [published]
 
-# Serialize all versions: cancellation must not interrupt a partial publication.
 permissions:
   contents: read
 
@@ -32,7 +31,6 @@ jobs:
       - run: npm ci --engine-strict
       - run: npm run check
       - run: npm run test:consumer
-      # Retain the validated npm tarball for release recovery.
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -78,7 +76,6 @@ jobs:
           DIST_TAG: ${{ needs.build.outputs.dist-tag }}
 
   publish-pages:
-    # Deploy stable documentation after validation.
     needs: build
     if: needs.build.outputs.dist-tag == 'latest'
     runs-on: ubuntu-latest

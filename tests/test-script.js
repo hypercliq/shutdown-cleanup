@@ -103,36 +103,25 @@ const handleHandlerRegistration = (action, parameters) => {
     }
 
     case 'with-signal-and-phase': {
-      // try {
       registerHandler(() => {}, {
         signal: 'SIGTERM',
         phase: 1,
       })
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
 
       break
     }
 
     case 'with-invalid-phase': {
-      // try {
       const phase = parameters[0] === 'fractional' ? 1.5 : 0
 
       registerHandler(() => {}, {
         phase,
       })
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
 
       break
     }
 
     case 'with-duplicate-identifier': {
-      // try {
       const identifier = parameters[0]
       registerHandler(() => {}, {
         identifier: identifier,
@@ -140,23 +129,14 @@ const handleHandlerRegistration = (action, parameters) => {
       registerHandler(() => {}, {
         identifier: identifier,
       })
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
 
       break
     }
 
     case 'with-uncatchable-signal': {
-      // try {
       registerHandler(() => {}, {
         signal: 'SIGKILL',
       })
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
 
       break
     }
@@ -289,7 +269,6 @@ switch (flag) {
       const signal = rest[0]
       const duplicate = rest[1]
 
-      // try {
       results.added = addSignal(signal)
 
       if (duplicate) {
@@ -300,10 +279,6 @@ switch (flag) {
       results.removed = removeSignal(signal)
       results.listAfter = listSignals()
       console.log(JSON.stringify(results))
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
     }
 
     break
@@ -314,12 +289,7 @@ switch (flag) {
       const strategy = rest[0]
       const scenario = rest[1]
 
-      // try {
       setErrorHandlingStrategy(strategy)
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
 
       if (scenario === 'signal-handler') {
         registerHandler(
@@ -388,15 +358,10 @@ switch (flag) {
     {
       const exitCode = rest[0]
       const exitCodeValue = rest[1] === 'raw' ? exitCode : Number(exitCode)
-      // try {
       setCustomExitCode(exitCodeValue)
       registerHandler(async () => {
         console.log('Handler for exit')
       })
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
     }
 
     break

@@ -12,6 +12,9 @@ exclude:
   - .lintstagedrc.json
   - .nvmrc
   - coverage/
+  - scrap/
+  - '*.tgz'
+  - .env*
   - eslint.config.js
   - index.d.ts
   - index.js

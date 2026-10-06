@@ -1,5 +1,3 @@
-# Runtime consumers and contributor tools have separate Node.js minimums.
-
 name: Node.js CI
 
 on:
@@ -16,12 +14,10 @@ jobs:
 
     strategy:
       matrix:
-        # Keep the exact engines minimum alongside moving supported majors.
         node-version: ['22.0.0', 22.x, 24.x]
 
     steps:
       - uses: actions/checkout@v7
-      # npm 10 can run prepare even with --ignore-scripts; pack with npm 11.
       - name: Use packaging toolchain
         uses: actions/setup-node@v7
         with:
@@ -31,7 +27,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
-      # Install in an isolated consumer without development tools/hooks.
       - run: npm run test:consumer -- "$RUNNER_TEMP"/hypercliq-shutdown-cleanup-*.tgz
 
   toolchain:
