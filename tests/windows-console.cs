@@ -84,6 +84,12 @@ public static class ShutdownConsoleHarness
         throw new TimeoutException("Missing Node marker: " + marker + "\n" + ReadJournal(journal));
     }
 
+    public static void IgnoreCtrlCForChildren()
+    {
+        // Regression setup: reproduce a launcher that disables Ctrl+C inheritance.
+        Check(SetConsoleCtrlHandler(null, true), "SetConsoleCtrlHandler ignore Ctrl+C");
+    }
+
     public static uint Run(string node, string fixture, string journal, string signal, string mode, string action)
     {
         var startup = new StartupInfo();
@@ -93,6 +99,10 @@ public static class ShutdownConsoleHarness
         ProcessInfo info;
         var command = new StringBuilder(Quote(node) + " " + Quote(fixture) + " " +
             Quote(signal) + " " + Quote(mode) + " " + Quote(journal));
+        // The CI launcher can ignore Ctrl+C, and that attribute is inherited even
+        // with CREATE_NEW_CONSOLE. Clear it before spawning Node; registering our
+        // IgnoreControl delegate later only protects this isolated helper.
+        Check(SetConsoleCtrlHandler(null, false), "SetConsoleCtrlHandler enable Ctrl+C inheritance");
         // CREATE_NEW_CONSOLE, without CREATE_NEW_PROCESS_GROUP (which disables Ctrl+C).
         Check(CreateProcessW(node, command, IntPtr.Zero, IntPtr.Zero, false, 0x10,
             IntPtr.Zero, null, ref startup, out info), "CreateProcessW");

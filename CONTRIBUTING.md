@@ -48,7 +48,7 @@ Counts compare the workflows at `4e51d82` with the consolidated workflows, for a
 | Installed-package contents, ESM exports, declaration checks         | 3 → 1             | 1 → 1                              |
 | Full installed runtime/native suites                                | 19 → 16           | 17 → 16                            |
 
-Historical durations available on 2026-10-06: [PR run 37370952905](https://github.com/hypercliq/shutdown-cleanup/actions/runs/37370952905) took 15m 04s (failure, 2026-10-05); [release run 30565818421](https://github.com/hypercliq/shutdown-cleanup/actions/runs/30565818421) took 10m 58s (failure, 2026-07-30). Both used older workflows than this checkout and are not a comparable baseline. The consolidated workflows have no measured GitHub duration yet; no speedup is claimed.
+Historical durations available on 2026-10-06: [PR run 37370952905](https://github.com/hypercliq/shutdown-cleanup/actions/runs/37370952905) took 15m 04s (failure, 2026-10-05); [release run 30565818421](https://github.com/hypercliq/shutdown-cleanup/actions/runs/30565818421) took 10m 58s (failure, 2026-07-30). Both used older workflows than this checkout and are not a comparable baseline. The first consolidated [PR #1655 run](https://github.com/hypercliq/shutdown-cleanup/actions/runs/37453673984) took 2m 42s (failure, 2026-10-06): the development job, all four Linux jobs and all eight macOS candidates passed; every Windows job timed out in the seven Ctrl+C cases, so the support gate failed. The local harness fix and its inherited Ctrl+C-ignore regression case await a new Windows run; no speedup is claimed.
 
 ## Releases
 

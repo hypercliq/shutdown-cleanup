@@ -64,7 +64,7 @@ const runPosix = (signal, mode, expected, expectations = {}, onReady) =>
     assert.deepStrictEqual(await journalLines(journal), expected)
   })
 
-const runWindows = (signal, mode, action, expected, code) =>
+const runWindows = (signal, mode, action, expected, code, arguments_ = []) =>
   withJournal(async (journal) => {
     const result = await execute(
       'powershell.exe',
@@ -88,6 +88,7 @@ const runWindows = (signal, mode, action, expected, code) =>
         mode,
         '-Action',
         action,
+        ...arguments_,
       ],
       { timeout: 45_000, windowsHide: true },
     )
@@ -224,6 +225,19 @@ describe('Genuine OS signal integration (no process.emit)', () => {
         runWindows('SIGINT', mode, 'control', expected, code),
       )
     }
+    it(
+      'CTRL_C_EVENT / SIGINT: clears the inherited Ctrl+C-ignore attribute',
+      { skip },
+      () =>
+        runWindows(
+          'SIGINT',
+          'default',
+          'control',
+          phases('SIGINT'),
+          os.constants.signals.SIGINT,
+          ['-IgnoredCtrlC'],
+        ),
+    )
     for (const mode of ['added', 'specific']) {
       it(`CTRL_BREAK_EVENT / SIGBREAK: ${mode} (opt-in)`, { skip }, () =>
         runWindows(
