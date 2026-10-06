@@ -29,6 +29,37 @@ registerHandler(handler, { phase: 1, signal: 'SIGTERM' })
 // @ts-expect-error shouldTerminate only applies to signal-specific handlers.
 registerHandler(handler, { shouldTerminate: false })
 
+// @ts-expect-error identifiers must be strings.
+registerHandler(handler, { identifier: 42 })
+
+// @ts-expect-error null does not request the default phase.
+registerHandler(handler, { phase: null })
+
+// @ts-expect-error signals must be strings.
+registerHandler(handler, { signal: false })
+
+// @ts-expect-error termination flags must be booleans.
+registerHandler(handler, { signal: 'SIGTERM', shouldTerminate: 0 })
+
+// @ts-expect-error options must be an object.
+registerHandler(handler, 42)
+
+// @ts-expect-error null options are invalid.
+registerHandler(handler, null)
+
+// @ts-expect-error an array is not a registration options object.
+registerHandler(handler, [])
+
+// @ts-expect-error a handler must be a function.
+registerHandler('handler')
+
+const emptyIdentifier: string = registerHandler(handler, { identifier: '' })
+const emptyEventIdentifier: string = registerHandler(handler, {
+  signal: '',
+  shouldTerminate: false,
+})
+console.log(emptyIdentifier, emptyEventIdentifier)
+
 setErrorHandlingStrategy('continue')
 setErrorHandlingStrategy('stop')
 

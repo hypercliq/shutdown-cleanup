@@ -4,14 +4,16 @@ export type ErrorHandlingStrategy = 'continue' | 'stop'
 
 export interface BaseRegisterHandlerOptions {
   /**
-   * An optional identifier for the handler. An identifier is generated if not provided.
+   * An optional unique string identifier for the handler; an empty string is valid.
+   * An identifier is generated if omitted or undefined.
    */
   identifier?: string
 }
 
 export interface PhaseRegisterHandlerOptions extends BaseRegisterHandlerOptions {
   /**
-   * The phase during which the handler should be executed. Defaults to phase 1.
+   * A positive safe integer phase during which the handler should be executed.
+   * Defaults to phase 1 if omitted or undefined.
    * Cannot be used together with `signal`.
    */
   phase?: number
@@ -21,7 +23,8 @@ export interface PhaseRegisterHandlerOptions extends BaseRegisterHandlerOptions 
 
 export interface SignalRegisterHandlerOptions extends BaseRegisterHandlerOptions {
   /**
-   * The signal to listen for. If specified, registers a signal-specific handler.
+   * The signal or process event name to listen for. Any string, including an empty
+   * event name, registers a signal-specific handler. SIGKILL and SIGSTOP are rejected.
    * Cannot be used together with `phase`.
    */
   signal: string
@@ -93,6 +96,12 @@ export function listSignals(options?: ListSignalsOptions): string[]
  * Registers a handler to be executed during the shutdown process or when a specific signal is received.
  * Phased handlers are snapshotted when shutdown starts, before any terminating signal-specific handler.
  * Registrations made after that point are accepted but excluded from the active phased cleanup.
+ * Inputs are validated before registry or process listener changes. Rejected registrations
+ * leave handler lists, signal lists, and process listeners unchanged.
+ * In JavaScript, options must be a non-null object excluding arrays; inherited properties
+ * are supported and extra keys are ignored. Undefined optional values use their defaults.
+ * @throws {TypeError} For a non-function handler, malformed options, or incorrect option value types.
+ * @throws {Error} For an invalid phase, incompatible options, duplicate identifier or signal, or uncatchable signal.
  * @param handler The handler function to execute, which can be async.
  * @param options Options to configure the handler registration.
  * @returns The identifier of the registered handler.

@@ -38,10 +38,6 @@ const hasHandlerIdentifier = (identifier) =>
     .some((phaseHandlers) => phaseHandlers.has(identifier))
 
 const registerPhaseHandler = (phaseKey, phaseHandlers, identifier, handler) => {
-  if (!Number.isSafeInteger(phaseKey) || phaseKey < 1) {
-    throw new Error('Phase must be a positive integer greater than 0')
-  }
-
   phaseHandlers.set(identifier, {
     type: 'phase',
     handler,
@@ -59,26 +55,6 @@ const registerSignalHandler = (
   identifier,
   handler,
 ) => {
-  if (uncatchableSignals.has(signal)) {
-    throw new Error(`Cannot handle uncatchable signal '${signal}'`)
-  }
-
-  // Check if signal already has a handler in this phase
-  for (const handlerEntry of phaseHandlers.values()) {
-    if (handlerEntry.signal === signal) {
-      throw new Error(`Signal ${signal} already has a handler`)
-    }
-  }
-
-  if (signals.has(signal)) {
-    signals.delete(signal)
-    removedSignals.add(signal)
-    process.off(signal, shutdown)
-    logger(
-      `Signal ${signal} removed from main listener due to specific handler`,
-    )
-  }
-
   const isTerminate = shouldTerminate !== false // Default to true if undefined
 
   // Define the listener for the signal
@@ -110,7 +86,19 @@ const registerSignalHandler = (
     await runHandler()
   }
 
-  // Register the handler
+  // Attach first so a listener attachment error cannot change the registry
+  // or remove the existing shutdown listener.
+  process.on(signal, listener)
+
+  if (signals.has(signal)) {
+    signals.delete(signal)
+    removedSignals.add(signal)
+    process.off(signal, shutdown)
+    logger(
+      `Signal ${signal} removed from main listener due to specific handler`,
+    )
+  }
+
   phaseHandlers.set(identifier, {
     type: 'signal',
     signal,
@@ -119,8 +107,6 @@ const registerSignalHandler = (
     listener,
   })
 
-  // Attach the listener
-  process.on(signal, listener)
   logger(`Signal handler registered for signal: ${signal}`)
 }
 
@@ -143,30 +129,78 @@ const registerHandler = (handler, options = {}) => {
     throw new TypeError('Handler must be a function')
   }
 
+  if (
+    options === null ||
+    typeof options !== 'object' ||
+    Array.isArray(options)
+  ) {
+    throw new TypeError('Options must be a non-null object, not an array')
+  }
+
   const {
-    identifier = createUniqueIdentifier(),
+    identifier: providedIdentifier,
     phase,
     signal,
     shouldTerminate,
   } = options
 
-  if (hasHandlerIdentifier(identifier)) {
-    throw new Error(`Handler with identifier '${identifier}' already exists`)
+  if (
+    providedIdentifier !== undefined &&
+    typeof providedIdentifier !== 'string'
+  ) {
+    throw new TypeError('Identifier must be a string')
   }
 
-  if (signal && phase !== undefined) {
+  if (signal !== undefined && typeof signal !== 'string') {
+    throw new TypeError('Signal must be a string')
+  }
+
+  if (shouldTerminate !== undefined && typeof shouldTerminate !== 'boolean') {
+    throw new TypeError('"shouldTerminate" must be a boolean')
+  }
+
+  if (
+    providedIdentifier !== undefined &&
+    hasHandlerIdentifier(providedIdentifier)
+  ) {
+    throw new Error(
+      `Handler with identifier '${providedIdentifier}' already exists`,
+    )
+  }
+
+  const isSignalHandler = signal !== undefined
+  if (isSignalHandler && phase !== undefined) {
     throw new Error('Cannot specify both "signal" and "phase"')
   }
 
-  const phaseKey = signal ? 0 : (phase ?? 1)
-
-  let phaseHandlers = registeredHandlers.get(phaseKey)
-  if (!phaseHandlers) {
-    phaseHandlers = new Map()
-    registeredHandlers.set(phaseKey, phaseHandlers)
+  const selectedPhase = phase === undefined ? 1 : phase
+  const phaseKey = isSignalHandler ? 0 : selectedPhase
+  if (isSignalHandler) {
+    if (uncatchableSignals.has(signal)) {
+      throw new Error(`Cannot handle uncatchable signal '${signal}'`)
+    }
+  } else {
+    if (shouldTerminate !== undefined) {
+      throw new Error('"shouldTerminate" requires "signal"')
+    }
+    if (!Number.isSafeInteger(phaseKey) || phaseKey < 1) {
+      throw new Error('Phase must be a positive integer greater than 0')
+    }
   }
 
-  if (signal) {
+  const existingPhaseHandlers = registeredHandlers.get(phaseKey)
+  if (
+    isSignalHandler &&
+    existingPhaseHandlers?.values().some((entry) => entry.signal === signal)
+  ) {
+    throw new Error(`Signal ${signal} already has a handler`)
+  }
+
+  // All input validation precedes identifier generation and state changes.
+  const identifier = providedIdentifier ?? createUniqueIdentifier()
+  const phaseHandlers = existingPhaseHandlers ?? new Map()
+
+  if (isSignalHandler) {
     registerSignalHandler(
       signal,
       phaseHandlers,
@@ -176,6 +210,10 @@ const registerHandler = (handler, options = {}) => {
     )
   } else {
     registerPhaseHandler(phaseKey, phaseHandlers, identifier, handler)
+  }
+
+  if (!existingPhaseHandlers) {
+    registeredHandlers.set(phaseKey, phaseHandlers)
   }
 
   return identifier

@@ -28,6 +28,8 @@ const runShutdownScenario = (source, expectations = {}) =>
         import { setTimeout as delay } from 'node:timers/promises'
         import {
           addSignal,
+          listHandlers,
+          listSignals,
           registerHandler,
           removeHandler,
           setCustomExitCode,
@@ -40,6 +42,38 @@ const runShutdownScenario = (source, expectations = {}) =>
     ...expectations,
   })
 
+const runRegistrationValidationScenario = (source) =>
+  runShutdownScenario(`
+    import assert from 'node:assert/strict'
+
+    const snapshot = () => ({
+      handlers: listHandlers(),
+      signals: listSignals(),
+      allSignals: listSignals({ includeSignalHandlers: true }),
+      listeners: process.eventNames().map(event => ({
+        event,
+        count: process.listenerCount(event),
+        listeners: process.rawListeners(event),
+      })),
+    })
+    const assertRejected = (handler, options, expectedError) => {
+      const before = snapshot()
+      assert.throws(() => registerHandler(handler, options), expectedError)
+      assert.deepStrictEqual(snapshot(), before)
+    }
+
+    // Exercise validation with no groups and with both group types present.
+    for (const populated of [false, true]) {
+      if (populated) {
+        registerHandler(() => {}, { identifier: 'existing-phase', phase: 2 })
+        registerHandler(() => {}, {
+          identifier: 'existing-signal', signal: 'SIGINT', shouldTerminate: false,
+        })
+      }
+      ${source}
+    }
+  `)
+
 const expectLines =
   (...lines) =>
   (output) =>
@@ -47,6 +81,170 @@ const expectLines =
 
 describe('Shutdown-cleanup module', () => {
   describe('Handler Registration', () => {
+    it('should leave registry and listeners unchanged for invalid handlers', () =>
+      runRegistrationValidationScenario(`
+        for (const handler of [undefined, null, false, 1, 'handler', {}, [], Symbol('handler')]) {
+          assertRejected(handler, { signal: 'SIGTERM' }, TypeError)
+        }
+      `))
+
+    it('should leave registry and listeners unchanged for invalid phases', () =>
+      runRegistrationValidationScenario(`
+        for (const phase of [0, -1, 1.5, NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER + 1, '2', true, null, {}, [], Symbol('phase'), 1n]) {
+          assertRejected(() => {}, { phase }, /Phase must be a positive integer greater than 0/)
+        }
+      `))
+
+    it('should leave registry and listeners unchanged for uncatchable signals', () =>
+      runRegistrationValidationScenario(`
+        for (const signal of ['SIGKILL', 'SIGSTOP']) {
+          assertRejected(() => {}, { signal }, /Cannot handle uncatchable signal/)
+        }
+      `))
+
+    it('should leave registry and listeners unchanged for malformed options', () =>
+      runRegistrationValidationScenario(`
+        for (const options of [null, false, true, 0, 1, 'options', 1n, Symbol('options'), [], () => {}]) {
+          assertRejected(() => {}, options, TypeError)
+        }
+        for (const signal of [null, false, true, 0, 1, NaN, {}, [], Symbol('signal')]) {
+          assertRejected(() => {}, { signal }, TypeError)
+        }
+        for (const shouldTerminate of [null, 0, 1, 'false', {}, [], Symbol('terminate')]) {
+          assertRejected(() => {}, { signal: 'SIGTERM', shouldTerminate }, TypeError)
+        }
+        for (const options of [
+          { signal: 'SIGTERM', phase: 1 },
+          { signal: '', phase: 1 },
+          { signal: 'SIGTERM', phase: null },
+        ]) {
+          assertRejected(() => {}, options, /Cannot specify both "signal" and "phase"/)
+        }
+        for (const options of [{ shouldTerminate: false }, { phase: 2, shouldTerminate: true }]) {
+          assertRejected(() => {}, options, /"shouldTerminate" requires "signal"/)
+        }
+      `))
+
+    it('should reject non-string identifiers without changing registry or listeners', () =>
+      runRegistrationValidationScenario(`
+        for (const identifier of [null, false, true, 0, 42, 1n, Symbol('identifier'), {}, [], new String('identifier')]) {
+          assertRejected(() => {}, { identifier }, TypeError)
+          assertRejected(() => {}, { identifier, signal: 'SIGTERM' }, TypeError)
+        }
+      `))
+
+    it('should reject duplicate identifiers across phases and signals without changing state', () =>
+      runRegistrationValidationScenario(`
+        registerHandler(() => {}, { identifier: 'duplicate-phase', phase: 3 })
+        registerHandler(() => {}, {
+          identifier: 'duplicate-signal', signal: 'duplicate-event', shouldTerminate: false,
+        })
+        for (const identifier of ['duplicate-phase', 'duplicate-signal']) {
+          for (const options of [{ phase: 3 }, { phase: 4 }, { signal: 'SIGTERM' }, { signal: 'another-event' }]) {
+            assertRejected(() => {}, { ...options, identifier }, /already exists/)
+          }
+        }
+        removeHandler('duplicate-phase')
+        removeHandler('duplicate-signal')
+      `))
+
+    it('should reject duplicate default signals and custom events without changing state', () =>
+      runRegistrationValidationScenario(`
+        for (const signal of ['SIGTERM', 'duplicate-event', '']) {
+          const identifier = registerHandler(() => {}, { signal, shouldTerminate: false })
+          assertRejected(() => {}, { signal }, /already has a handler/)
+          assertRejected(() => {}, { signal, shouldTerminate: false }, /already has a handler/)
+          assert.strictEqual(removeHandler(identifier), true)
+        }
+      `))
+
+    it('should preserve supported JavaScript options and string identifiers', () =>
+      runRegistrationValidationScenario(`
+        const handler = () => {}
+        for (const options of [
+          undefined,
+          {},
+          { identifier: undefined, phase: undefined, signal: undefined, shouldTerminate: undefined },
+          { identifier: '', phase: 3 },
+          { phase: Number.MAX_SAFE_INTEGER },
+          { phase: 4, extraOption: 'ignored' },
+          Object.create({ identifier: 'inherited', phase: 5 }),
+          Object.assign(Object.create(null), { identifier: 'null-prototype' }),
+          new class { phase = 6 }(),
+        ]) {
+          const identifier = registerHandler(handler, options)
+          assert.strictEqual(typeof identifier, 'string')
+          if (options?.identifier !== undefined) {
+            assert.strictEqual(identifier, options.identifier)
+          } else {
+            assert.match(identifier, /^handler_[0-9]+$/)
+          }
+          const group = listHandlers().find(group => group.phaseKey === (options?.phase ?? 1))
+          assert.deepStrictEqual(group.handlers.find(entry => entry.identifier === identifier), {
+            identifier, type: 'phase', handler,
+          })
+          assert.strictEqual(removeHandler(identifier), true)
+        }
+      `))
+
+    it('should support string process events and restore replaced listeners', () =>
+      runRegistrationValidationScenario(`
+        for (const signal of ['SIGTERM', 'custom-event', 'SIGUNKNOWN', '']) {
+          const externalListener = () => {}
+          process.on(signal, externalListener)
+          const before = process.rawListeners(signal)
+          const calls = []
+          const handler = value => { calls.push(value) }
+          const identifier = registerHandler(handler, { signal, shouldTerminate: false })
+          assert.strictEqual(process.listenerCount(signal), before.length + (signal === 'SIGTERM' ? 0 : 1))
+          assert.ok(process.rawListeners(signal).includes(externalListener))
+          assert.ok(!listSignals().includes(signal))
+          assert.ok(listSignals({ includeSignalHandlers: true }).includes(signal))
+          process.emit(signal, 'first')
+          process.emit(signal, 'second')
+          assert.deepStrictEqual(calls, ['first', 'second'])
+          assert.strictEqual(removeHandler(identifier), true)
+          assert.strictEqual(process.listenerCount(signal), before.length)
+          for (const listener of before) {
+            assert.ok(process.rawListeners(signal).includes(listener))
+          }
+          assert.strictEqual(listSignals().includes(signal), signal === 'SIGTERM')
+          process.off(signal, externalListener)
+        }
+        for (const options of [
+          { signal: 'termination-default' },
+          { signal: 'termination-default', shouldTerminate: undefined },
+          { signal: 'termination-default', shouldTerminate: true },
+        ]) {
+          const identifier = registerHandler(() => {}, options)
+          const entry = listHandlers().find(group => group.phaseKey === 'signal').handlers.find(entry => entry.identifier === identifier)
+          assert.strictEqual(entry.shouldTerminate, true)
+          assert.strictEqual(removeHandler(identifier), true)
+        }
+      `))
+
+    it('should leave registry and default listeners unchanged if attaching a listener fails', () =>
+      runRegistrationValidationScenario(`
+        const originalOn = process.on
+        const attachmentError = new Error('Listener attachment failed')
+        for (const signal of ['SIGTERM', 'failed-event']) {
+          process.on = function (event, listener) {
+            if (event === signal) throw attachmentError
+            return originalOn.call(this, event, listener)
+          }
+          try {
+            assertRejected(() => {}, { signal }, error => error === attachmentError)
+          } finally {
+            process.on = originalOn
+          }
+          // A subsequent successful registration and removal must still restore
+          // the original default listener, without stale removed-signal state.
+          const identifier = registerHandler(() => {}, { signal, shouldTerminate: false })
+          assert.strictEqual(removeHandler(identifier), true)
+          assert.strictEqual(listSignals().includes(signal), signal === 'SIGTERM')
+        }
+      `))
+
     it('should register, list and remove a handler', () => {
       const identifier = 'testSync'
       return spawnChildAndSetupListeners({

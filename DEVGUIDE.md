@@ -234,21 +234,24 @@ registerHandler(handler: Handler, options?: RegisterHandlerOptions): string
 
 Options:
 
-- `identifier?: string`: Unique handler identifier. An identifier is generated when omitted.
-- `phase?: number`: Positive integer phase for phased shutdown handlers. Defaults to `1`.
-- `signal?: string`: Signal or event name for a signal-specific handler.
+- `identifier?: string`: Unique string handler identifier, including an empty string. An identifier is generated when omitted or `undefined`.
+- `phase?: number`: Positive safe integer phase for phased shutdown handlers. Defaults to `1` when omitted or `undefined`.
+- `signal?: string`: Signal or process event name for a signal-specific handler. Any string, including an empty event name, selects a signal-specific handler; omitted or `undefined` selects a phased handler.
 - `shouldTerminate?: boolean`: For signal-specific handlers, controls whether phased shutdown runs after the handler. Defaults to `true`.
 
 Rules:
 
 - `handler` must be a function.
+- `options` must be a non-null object, excluding arrays; omitted or `undefined` uses the defaults. JavaScript options may have inherited properties or extra keys; extra keys are ignored.
 - `phase` and `signal` cannot be used together.
-- `phase` must be a positive integer.
-- `identifier` must be unique across all handlers.
+- `phase` must be a positive safe integer.
+- `identifier` must be a string and unique across all handlers.
+- `signal` must be a string; custom process event names are supported without a POSIX signal allowlist.
+- `shouldTerminate` must be a boolean when provided and can only be used with `signal`. Omitted or `undefined` uses the default.
 - Only one signal-specific handler can be registered for a given signal.
 - `SIGKILL` and `SIGSTOP` cannot be handled.
 
-Returns the handler identifier.
+Returns the handler identifier as a string. Invalid input types throw `TypeError`; invalid phases, incompatible options, duplicate identifiers or signals, and uncatchable signals throw `Error`. Rejected registrations leave `listHandlers()`, both forms of `listSignals()`, and process listeners unchanged.
 
 ### `removeHandler(identifier)`
 
@@ -385,6 +388,10 @@ registerHandler(
 ```
 
 ## Migration From Older Versions
+
+Registration now validates inputs before changing the registry or replacing listeners. This fixes empty groups left behind by invalid phases and uncatchable signals. It also tightens JavaScript validation to match the declared option types: primitives, arrays, and functions used as options, non-string identifiers or signals, `phase: null`, non-boolean `shouldTerminate` values, and `shouldTerminate` without a signal are rejected. Earlier versions could accept these values through destructuring, truthiness, or ignored options; this is a compatibility change for callers relying on those behaviors. Use an options object, string identifiers and event names, numeric phases, and boolean termination flags; omit optional values or use `undefined` for defaults. Values are not coerced to strings or booleans.
+
+Empty string identifiers, arbitrary string process event names, inherited option properties, and ignored extra keys remain supported in JavaScript. `signal: ''` now registers the empty-name process event, consistent with other string event names, whereas it previously fell through to a phase handler. Callers using an empty signal to request phased cleanup should omit `signal` instead. No signal allowlist or new public API is introduced.
 
 Phased cleanup now uses a fixed snapshot taken when shutdown starts. Previously, newly registered handlers could run if added to a current or future phase, and handlers registered by a terminating signal-specific handler could join the subsequent phases. Those registrations are now excluded from the active cleanup; perform and await any required late cleanup directly instead. Removing pending handlers remains supported, and removing the last handler in a future phase now safely skips it instead of throwing. Phase ordering, registration ordering, and exit-code conventions are unchanged.
 
