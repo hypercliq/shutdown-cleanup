@@ -35,7 +35,7 @@ const runShutdownScenario = (source, expectations = {}) =>
           setCustomExitCode,
           setErrorHandlingStrategy,
           setShutdownTimeout,
-        } from ${JSON.stringify(new URL('../index.js', import.meta.url).href)}
+        } from '@hypercliq/shutdown-cleanup'
         ${source}
       `,
     ],

@@ -1,5 +1,4 @@
-# This workflow will do a clean install of node dependencies and run checks across supported Node.js versions.
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+# Runtime consumers and contributor tools have separate Node.js minimums.
 
 name: Node.js CI
 
@@ -10,12 +9,35 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  runtime:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [22.x, 24.x]
+        # Keep the exact engines minimum alongside moving supported majors.
+        node-version: ['22.0.0', 22.x, 24.x]
+
+    steps:
+      - uses: actions/checkout@v7
+      # npm 10 can run prepare even with --ignore-scripts; pack with npm 11.
+      - name: Use packaging toolchain
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+      - run: npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP"
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+      # Install in an isolated consumer without development tools/hooks.
+      - run: npm run test:consumer -- "$RUNNER_TEMP"/hypercliq-shutdown-cleanup-*.tgz
+
+  toolchain:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: ['22.22.1', 24.x]
 
     steps:
       - uses: actions/checkout@v7
@@ -23,6 +45,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm ci
+      - run: npm ci --engine-strict
       - run: npm run lint
       - run: npm t

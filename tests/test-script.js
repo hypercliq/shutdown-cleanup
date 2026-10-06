@@ -9,7 +9,7 @@ import {
   setCustomExitCode,
   setErrorHandlingStrategy,
   setShutdownTimeout,
-} from '../index.js'
+} from '@hypercliq/shutdown-cleanup'
 
 const [flag, ...rest] = process.argv.slice(2)
 

@@ -27,7 +27,7 @@ registerHandler(async (signal) => {
 - **Shutdown timeout** — force-exits if cleanup hangs (default 30 s)
 - **Custom exit codes**
 - **TypeScript** declarations included
-- **ESM-only**, Node.js ≥ 22
+- **ESM-only**, Node.js ≥ 22.0.0
 
 ## Installation
 
@@ -42,6 +42,8 @@ pnpm add @hypercliq/shutdown-cleanup
 ## Documentation
 
 Full API reference, phased shutdown examples, signal-specific handlers, error strategies, and best practices in the **[Developer Guide](https://hypercliq.github.io/shutdown-cleanup/DEVGUIDE.html)**.
+
+For repository setup and the separate development-toolchain minimum (Node.js 22.22.1 on the 22.x line, or 24+), see [Contributing](CONTRIBUTING.md).
 
 ## License
 
