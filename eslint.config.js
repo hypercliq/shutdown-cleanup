@@ -2,7 +2,9 @@ import globals from 'globals'
 import pluginJs from '@eslint/js'
 import eslintPluginUnicorn from 'eslint-plugin-unicorn'
 
-/** @type {import('eslint').Linter.Config[]} */
+/**
+@type {import('eslint').Linter.Config[]}
+*/
 export default [
   {
     // TypeScript declarations/fixtures are validated by tsc, not ESLint.
