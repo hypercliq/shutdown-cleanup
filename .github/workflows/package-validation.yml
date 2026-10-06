@@ -49,7 +49,7 @@ jobs:
           node scripts/archive.js seal "$RUNNER_TEMP/release/package.tgz"
       - name: Check source and installed package
         run: npm run check -- "$RUNNER_TEMP/release/package.tgz"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.archive.outputs.artifact-name }}
           path: |
@@ -59,7 +59,7 @@ jobs:
           retention-days: 30
       - name: Upload source coverage
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-node-development-${{ github.run_attempt }}
           path: |
