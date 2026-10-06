@@ -15,8 +15,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "npm run test:types && node --test tests/index.test.js",
-    "test:coverage": "c8 --reporter=html --reporter=text-summary node --test tests/index.test.js",
+    "test": "npm run test:types && node --test tests/index.test.js tests/subprocess.test.js",
+    "test:coverage": "c8 --reporter=html --reporter=text-summary node --test tests/index.test.js tests/subprocess.test.js",
     "test:types": "tsc -p tsconfig.types-test.json",
     "lint": "eslint index.js tests/*.js",
     "lint:fix": "eslint --fix index.js tests/*.js",
