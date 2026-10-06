@@ -3,10 +3,12 @@
 name: Node.js CI
 
 on:
-  #   push:
-  #     branches: [main]
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
+    types: [checks_requested]
 
 jobs:
   runtime:
@@ -46,5 +48,13 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm ci --engine-strict
-      - run: npm run lint
-      - run: npm t
+      - run: npm run check
+      - name: Upload coverage reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-node-${{ matrix.node-version }}
+          path: |
+            coverage/
+            !coverage/tmp/**
+          if-no-files-found: warn

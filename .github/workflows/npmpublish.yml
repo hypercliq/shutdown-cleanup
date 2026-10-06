@@ -13,8 +13,7 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm ci --engine-strict
-      - run: npm run lint
-      - run: npm t
+      - run: npm run check
       - run: npm run test:consumer
 
   publish-npm:

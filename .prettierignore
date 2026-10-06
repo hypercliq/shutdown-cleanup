@@ -1,0 +1,10 @@
+# Check all supported maintained source, declarations, fixtures, docs and configs.
+# Dependencies, generated reports/site output, archives and local experiments
+# are outside the contributor formatting contract.
+node_modules/
+coverage/
+.nyc_output/
+_site/
+scrap/
+*.tgz
+*.log
