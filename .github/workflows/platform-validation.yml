@@ -12,13 +12,21 @@ permissions:
   contents: read
 
 jobs:
-  linux-windows:
-    name: ${{ matrix.os }} / Node ${{ matrix.node }}
-    runs-on: ${{ matrix.os }}
+  platform-checks:
+    name: ${{ matrix.runner.label }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.runner.label }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        runner:
+          - label: ubuntu-latest
+            architecture: x64
+          - label: windows-latest
+            architecture: x64
+          - label: macos-latest
+            architecture: arm64
+          - label: macos-26-intel
+            architecture: x64
         node: ['22.0.0', 22.x, 24.x, 26.x]
     defaults:
       run:
@@ -36,56 +44,6 @@ jobs:
       - name: Verify the shared archive
         run: node scripts/archive.js verify "$RUNNER_TEMP/release/package.tgz"
       - name: Portable and native OS integration against public package exports
-        run: |
-          set -o pipefail
-          node -p "JSON.stringify({platform:process.platform,architecture:process.arch,node:process.version,osRelease:require('node:os').release()})" | tee platform-validation.log
-          npm run test:consumer -- "$RUNNER_TEMP/release/package.tgz" 2>&1 | tee -a platform-validation.log
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: validation-${{ matrix.os }}-node-${{ matrix.node }}-${{ github.run_attempt }}
-          path: platform-validation.log
-          if-no-files-found: warn
-
-  support-gate:
-    name: Linux and Windows support gate
-    needs: linux-windows
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require every Linux and Windows matrix entry
-        env:
-          RESULT: ${{ needs.linux-windows.result }}
-        run: test "$RESULT" = success
-
-  macos-validation:
-    name: macOS candidate (${{ matrix.runner.architecture }}) / Node ${{ matrix.node }}
-    runs-on: ${{ matrix.runner.label }}
-    # Diagnostic evidence only until the entire dedicated matrix has passed
-    # and a maintainer promotes the documented support claim.
-    continue-on-error: true
-    strategy:
-      fail-fast: false
-      matrix:
-        runner:
-          - label: macos-latest
-            architecture: arm64
-          - label: macos-26-intel
-            architecture: x64
-        node: ['22.0.0', 22.x, 24.x, 26.x]
-    steps:
-      - uses: actions/checkout@v7
-      - name: Download the validated archive
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.artifact-name }}
-          path: ${{ runner.temp }}/release
-      - uses: actions/setup-node@v7
-        with:
-          node-version: ${{ matrix.node }}
-      - name: Verify the shared archive
-        run: node scripts/archive.js verify "$RUNNER_TEMP/release/package.tgz"
-      - name: Dedicated macOS portable and native signal validation
         env:
           EXPECTED_ARCHITECTURE: ${{ matrix.runner.architecture }}
         run: |
@@ -96,6 +54,17 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: validation-macos-${{ matrix.runner.architecture }}-node-${{ matrix.node }}-${{ github.run_attempt }}
+          name: validation-${{ matrix.runner.label }}-node-${{ matrix.node }}-${{ github.run_attempt }}
           path: platform-validation.log
           if-no-files-found: warn
+
+  support-gate:
+    name: Linux, Windows and macOS support gate
+    needs: platform-checks
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every Linux, Windows and macOS matrix entry
+        env:
+          RESULT: ${{ needs.platform-checks.result }}
+        run: test "$RESULT" = success

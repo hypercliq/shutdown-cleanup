@@ -19,7 +19,7 @@ const packageValidation = workflow('package-validation.yml')
 const action = (job, name) =>
   job.steps.find((step) => step.uses?.startsWith(`${name}@`))
 
-test('publication requires development checks and the Linux/Windows support gate', () => {
+test('publication requires development checks and the Linux/Windows/macOS support gate', () => {
   assert.deepEqual(release.jobs['publish-npm'].needs, [
     'build',
     'validate-platforms',
@@ -45,11 +45,16 @@ test('publication requires development checks and the Linux/Windows support gate
   assert.equal(release.jobs.build.with.release, true)
   assert.equal(release.jobs['validate-platforms'].needs, 'build')
   const gate = platforms.jobs['support-gate']
-  assert.equal(gate.needs, 'linux-windows')
+  assert.equal(gate.needs, 'platform-checks')
   assert.equal(gate.if, 'always()')
   assert.equal(gate['continue-on-error'], undefined)
-  assert.equal(platforms.jobs['linux-windows']['continue-on-error'], undefined)
-  assert.equal(gate.steps[0].env.RESULT, '${{ needs.linux-windows.result }}')
+  assert.equal(
+    platforms.jobs['platform-checks']['continue-on-error'],
+    undefined,
+  )
+  assert.deepEqual(gate.steps[0].env, {
+    RESULT: '${{ needs.platform-checks.result }}',
+  })
 })
 
 test(
@@ -63,36 +68,50 @@ test(
         { env: { ...process.env, RESULT: result }, timeout: 5000 },
       )
       assert.ifError(child.error)
-      assert.equal(child.status === 0, result === 'success', result)
+      assert.equal(child.status, result === 'success' ? 0 : 1, result)
     }
   },
 )
 
-test('all sixteen consumer combinations survive with macOS still exploratory', () => {
-  const required = platforms.jobs['linux-windows']
-  const macos = platforms.jobs['macos-validation']
-  const versions = ['22.0.0', '22.x', '24.x', '26.x']
-  assert.deepEqual(required.strategy.matrix, {
-    os: ['ubuntu-latest', 'windows-latest'],
-    node: versions,
-  })
-  assert.deepEqual(macos.strategy.matrix, {
+test('one required matrix covers all sixteen consumer combinations and architectures', () => {
+  assert.deepEqual(Object.keys(platforms.jobs), [
+    'platform-checks',
+    'support-gate',
+  ])
+  const job = platforms.jobs['platform-checks']
+  assert.deepEqual(job.strategy.matrix, {
     runner: [
+      { label: 'ubuntu-latest', architecture: 'x64' },
+      { label: 'windows-latest', architecture: 'x64' },
       { label: 'macos-latest', architecture: 'arm64' },
       { label: 'macos-26-intel', architecture: 'x64' },
     ],
-    node: versions,
+    node: ['22.0.0', '22.x', '24.x', '26.x'],
   })
-  assert.equal(macos['continue-on-error'], true)
-  for (const job of [required, macos]) {
-    assert.equal(job.strategy['fail-fast'], false)
-    assert.ok(
-      job.steps.some((step) => step.run?.includes('npm run test:consumer')),
-    )
-    assert.ok(job.steps.some((step) => step.run?.includes('set -o pipefail')))
-    assert.equal(action(job, 'actions/upload-artifact').if, 'always()')
-  }
-  assert.ok(macos.steps.some((step) => step.run?.includes('process.arch')))
+  assert.equal(job['runs-on'], '${{ matrix.runner.label }}')
+  assert.equal(job['continue-on-error'], undefined)
+  assert.equal(job.if, undefined)
+  assert.equal(job.strategy['fail-fast'], false)
+  assert.equal(job.defaults.run.shell, 'bash')
+  const nativeValidation = job.steps.find((step) =>
+    step.run?.includes('npm run test:consumer'),
+  )
+  assert.equal(
+    nativeValidation.env.EXPECTED_ARCHITECTURE,
+    '${{ matrix.runner.architecture }}',
+  )
+  assert.ok(nativeValidation.run.includes('set -o pipefail'))
+  assert.ok(
+    nativeValidation.run.includes(
+      "require('node:assert/strict').equal(process.arch, process.env.EXPECTED_ARCHITECTURE)",
+    ),
+  )
+  const upload = action(job, 'actions/upload-artifact')
+  assert.equal(upload.if, 'always()')
+  assert.equal(
+    upload.with.name,
+    'validation-${{ matrix.runner.label }}-node-${{ matrix.node }}-${{ github.run_attempt }}',
+  )
 })
 
 test('one archive feeds package resolution, every platform and publication', () => {
@@ -145,16 +164,14 @@ test('one archive feeds package resolution, every platform and publication', () 
   )
   const upload = action(toolchain, 'actions/upload-artifact')
   assert.ok(upload.with.path.includes('package.tgz.sha512'))
-  for (const name of ['linux-windows', 'macos-validation']) {
-    const job = platforms.jobs[name]
-    assert.equal(
-      action(job, 'actions/download-artifact').with.name,
-      '${{ inputs.artifact-name }}',
-    )
-    assert.ok(
-      job.steps.some((step) => step.run?.includes('scripts/archive.js verify')),
-    )
-  }
+  const job = platforms.jobs['platform-checks']
+  assert.equal(
+    action(job, 'actions/download-artifact').with.name,
+    '${{ inputs.artifact-name }}',
+  )
+  assert.ok(
+    job.steps.some((step) => step.run?.includes('scripts/archive.js verify')),
+  )
   assert.ok(
     release.jobs['publish-npm'].steps.some(
       (step) =>

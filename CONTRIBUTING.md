@@ -28,15 +28,13 @@ Runtime/signal tests must use child processes: imports attach listeners, and exi
 
 ## Platform validation
 
-CI tests the packed package on Linux and Windows with Node 22.0.0, current 22.x, 24.x, and 26.x. All entries are required for publication. macOS ARM64 and Intel x64 run the same versions as exploratory candidates with `continue-on-error`; their failures are retained but do not block release. Logs/artifacts record the actual host, architecture, Node version, results, and skips. Runner coverage does not certify every OS version, architecture, terminal, or service host.
+CI tests the packed package on Linux, Windows, macOS ARM64, and macOS Intel x64 with Node 22.0.0, current 22.x, 24.x, and 26.x. All sixteen entries are required for publication; one shared matrix and support gate require every target to succeed. Logs/artifacts record the actual host, architecture, Node version, results, and skips. Runner coverage does not certify every OS version, architecture, terminal, or service host.
 
-Before claiming macOS support, require every dedicated architecture/version job to pass on the intended revision, retain run/artifact links, remove `continue-on-error`, add macOS to the required gate, and update the consumer platform section. A green overall workflow alone does not prove exploratory success.
-
-All eight macOS candidate combinations remain pending and must survive through the next PR. PR validation cancels superseded runs of the same PR; release execution uses a separate concurrency group and never cancels an active publication.
+PR validation cancels superseded runs of the same PR; release execution uses a separate concurrency group and never cancels an active publication.
 
 ### CI execution inventory
 
-Counts compare the workflows at `4e51d82` with the consolidated workflows, for a complete run. Expanded jobs include all eight Linux/Windows jobs, all eight macOS candidates, and the support gate. Failed-job reruns reuse the original archive; a full rerun produces one new archive named for its attempt.
+Counts compare the workflows at `4e51d82` with the consolidated workflows, for a complete run. Expanded jobs include all sixteen platform entries and the support gate. Failed-job reruns reuse the original archive; a full rerun produces one new archive named for its attempt.
 
 | Work per workflow                                                   | CI before → after | Release before → after             |
 | ------------------------------------------------------------------- | ----------------- | ---------------------------------- |
@@ -48,14 +46,14 @@ Counts compare the workflows at `4e51d82` with the consolidated workflows, for a
 | Installed-package contents, ESM exports, declaration checks         | 3 → 1             | 1 → 1                              |
 | Full installed runtime/native suites                                | 19 → 16           | 17 → 16                            |
 
-Historical durations available on 2026-10-06: [PR run 37370952905](https://github.com/hypercliq/shutdown-cleanup/actions/runs/37370952905) took 15m 04s (failure, 2026-10-05); [release run 30565818421](https://github.com/hypercliq/shutdown-cleanup/actions/runs/30565818421) took 10m 58s (failure, 2026-07-30). Both used older workflows than this checkout and are not a comparable baseline. The first consolidated [PR #1655 run](https://github.com/hypercliq/shutdown-cleanup/actions/runs/37453673984) took 2m 42s (failure, 2026-10-06): the development job, all four Linux jobs and all eight macOS candidates passed; every Windows job timed out in the seven Ctrl+C cases, so the support gate failed. The local harness fix and its inherited Ctrl+C-ignore regression case await a new Windows run; no speedup is claimed.
+Historical durations available on 2026-10-06: [PR run 37370952905](https://github.com/hypercliq/shutdown-cleanup/actions/runs/37370952905) took 15m 04s (failure, 2026-10-05); [release run 30565818421](https://github.com/hypercliq/shutdown-cleanup/actions/runs/30565818421) took 10m 58s (failure, 2026-07-30). Both used older workflows than this checkout and are not a comparable baseline. The first consolidated [PR #1655 run](https://github.com/hypercliq/shutdown-cleanup/actions/runs/37453673984) took 2m 42s (failure, 2026-10-06): the development job, all four Linux jobs and all eight macOS jobs passed; every Windows job timed out in the seven Ctrl+C cases, so the support gate failed. The subsequent [verification run on `7d4b817`](https://github.com/hypercliq/shutdown-cleanup/actions/runs/37455281093) passed all sixteen platform entries, including all eight macOS architecture/Node combinations, in 2m 36s; no comparable-baseline speedup is claimed.
 
 ## Releases
 
 New releases publish to npm only. Obtain explicit user authorization before publishing a GitHub release or package.
 
 1. Update `package.json` and both root versions in `package-lock.json`; run `npm run check`.
-2. Require the intended revision's complete Linux/Windows CI matrix, including native console and forced-termination results.
+2. Require the intended revision's complete Linux/Windows/macOS ARM64/Intel CI matrix, including native signal, console, and forced-termination results.
 3. When authorized, tag that commit `v<version>` and publish its GitHub release (mark suffixed versions as prereleases).
 
 Automation checks release metadata and the development toolchain, then packs once. That archive and its SHA-512 checksum pass through installed-package checks, the platform matrix, and npm publication. Failed, skipped, or cancelled required validation blocks publication. Pages additionally requires successful npm publication. Stable releases use `latest`; prereleases use `next`. Build metadata is unsupported; promotion needs a new stable version.
