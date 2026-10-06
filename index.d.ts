@@ -156,7 +156,9 @@ export function setErrorHandlingStrategy(strategy: ErrorHandlingStrategy): void
 /**
  * Sets the timeout for the shutdown process. If the shutdown does not complete within this timeframe, the process is forcefully terminated.
  * One deadline covers the terminating signal-specific handler, if any, and all subsequent phased cleanup.
+ * Starting phased cleanup does not reset the deadline.
  * Handlers with `shouldTerminate: false` do not start this deadline.
+ * Uses Node.js timers: event-loop blocking can delay termination, and OS termination can bypass cleanup.
  * @param timeout The timeout in milliseconds.
  * @example
  * setShutdownTimeout(5000);

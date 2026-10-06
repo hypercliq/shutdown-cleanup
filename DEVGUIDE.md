@@ -180,11 +180,16 @@ setShutdownTimeout(20_000)
 
 The default timeout is 30 seconds. The value must be a positive finite number of milliseconds.
 
-One deadline covers the entire shutdown operation: the terminating signal-specific handler, if any, followed by all phased handlers. Time spent in the signal-specific handler consumes the same budget as the phases; the timer is not restarted between them or after an error under `continue`. A signal-specific handler that never settles therefore forces exit when the deadline expires. The timer also keeps the process alive while asynchronous cleanup is pending, including cleanup started by `beforeExit`.
+One deadline covers the entire shutdown operation: the terminating signal-specific handler, if any, followed by all phased handlers. Time spent in the signal-specific handler consumes the same budget as the phases; starting phased cleanup does not reset the deadline, nor does an error under `continue`. For example, with a 20-second timeout, a signal-specific handler that takes 12 seconds leaves about 8 seconds for all phases together. A signal-specific handler that never settles is subject to the same timeout. The timer also keeps the process alive while asynchronous cleanup is pending, including cleanup started by `beforeExit`.
 
 Handlers registered with `shouldTerminate: false` do not start a shutdown timer. If they run while another trigger has already started shutdown, that operation's deadline still applies to process termination. On timeout, the process exits with the custom exit code if set, otherwise `1`.
 
-The timeout cannot interrupt CPU-bound synchronous work that blocks the event loop. Keep synchronous handlers short.
+The deadline remains subject to Node.js and OS limitations:
+
+- The timeout uses Node's `setTimeout`; it is not a guaranteed wall-clock termination time. Blocking synchronous work or starving the event loop delays the timer and signal callbacks. Keep synchronous handlers short. Node also truncates fractional delays and converts delays below `1` or above `2_147_483_647` milliseconds to `1` millisecond. See [Node.js timers](https://nodejs.org/api/timers.html#settimeoutcallback-delay-args).
+- `SIGKILL` cannot be caught and prevents cleanup; `SIGSTOP` cannot be caught and suspends execution, including the timer. Signal support and delivery vary by OS, especially on Windows. A supervisor or OS can terminate the process before cleanup finishes. See [Node.js signal events](https://nodejs.org/api/process.html#signal-events).
+- `beforeExit` is emitted when the event loop drains, not on an explicit `process.exit()` or an uncaught exception. The `exit` event cannot wait for asynchronous cleanup. See [Node.js process events](https://nodejs.org/api/process.html#process-events).
+- Forced exit does not wait for pending asynchronous I/O, including log writes, and cannot guarantee that cleanup finishes. See [Node.js `process.exit()`](https://nodejs.org/api/process.html#processexitcode).
 
 ## Custom Exit Codes
 
