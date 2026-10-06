@@ -18,13 +18,14 @@
     "test": "npm run test:types && npm run test:runtime",
     "test:runtime": "node --test tests/index.test.js tests/subprocess.test.js",
     "test:consumer": "node scripts/test-consumer.js",
+    "test:package": "node scripts/test-package.js",
     "test:coverage": "c8 npm run test:runtime",
     "test:types": "tsc -p tsconfig.types-test.json",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "check": "npm run format:check && npm run lint && npm run test:types && npm run test:coverage",
+    "check": "npm run format:check && npm run lint && npm run test:types && npm run test:coverage && npm run test:package",
     "prepare": "husky"
   },
   "repository": {
