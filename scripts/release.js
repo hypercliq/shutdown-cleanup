@@ -5,6 +5,7 @@ import { appendFileSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { verifyArchive } from './archive.js'
 
 const packageName = '@hypercliq/shutdown-cleanup'
 const npmRegistry = 'https://registry.npmjs.org/'
@@ -207,6 +208,7 @@ async function main() {
   assert.equal(extra.length, 0, 'Unexpected arguments')
   assert.equal(distributionTag, expectedTag, 'Distribution tag mismatch')
   const archivePath = path.resolve(archive)
+  verifyArchive(archivePath)
   const packed = JSON.parse(
     execFileSync('tar', ['-xOzf', archivePath, 'package/package.json'], {
       encoding: 'utf8',

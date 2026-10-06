@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { test } from 'node:test'
+import { archiveDigest, verifyArchive } from '../scripts/archive.js'
+import {
+  isNewestPublishedRelease,
+  listReleases,
+} from '../scripts/pages-release.js'
 import {
   compareVersions,
   publicationPlan,
@@ -192,4 +200,121 @@ test('npm preview uses next without registry credentials', async () => {
     }),
     /backwards/,
   )
+})
+
+test('archive verification rejects changed bytes or a missing checksum', () => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'release-archive-'))
+  try {
+    const archive = path.join(directory, 'package.tgz')
+    writeFileSync(archive, bytes)
+    assert.throws(() => verifyArchive(archive), /ENOENT/)
+    writeFileSync(`${archive}.sha512`, `${archiveDigest(archive)}\n`)
+    verifyArchive(archive)
+    writeFileSync(archive, 'changed archive')
+    assert.throws(() => verifyArchive(archive), /Archive differs/)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+const publishedRelease = (id, publishedAt, overrides = {}) => ({
+  id,
+  tag_name: `v9.0.${id}`,
+  draft: false,
+  prerelease: false,
+  published_at: publishedAt,
+  ...overrides,
+})
+
+test('Pages follows publication order across stable and preview releases', () => {
+  const stable = publishedRelease(1, '2026-10-01T00:00:00Z')
+  const preview = publishedRelease(2, '2026-10-02T00:00:00Z', {
+    tag_name: 'v10.0.0-rc.1',
+    prerelease: true,
+  })
+  const draft = { id: 3, draft: true }
+  assert.equal(isNewestPublishedRelease(stable, [stable, draft]), true)
+  assert.equal(
+    isNewestPublishedRelease(preview, [stable, draft, preview]),
+    true,
+  )
+  assert.equal(isNewestPublishedRelease(stable, [preview, stable]), false)
+  const laterStable = publishedRelease(4, '2026-10-03T00:00:00Z')
+  assert.equal(
+    isNewestPublishedRelease(preview, [preview, stable, laterStable]),
+    false,
+  )
+  assert.equal(
+    isNewestPublishedRelease(laterStable, [preview, stable, laterStable]),
+    true,
+  )
+  const simultaneous = publishedRelease(5, laterStable.published_at)
+  assert.equal(
+    isNewestPublishedRelease(laterStable, [simultaneous, laterStable]),
+    false,
+  )
+})
+
+test('Pages stops when publication evidence is missing or invalid', () => {
+  const release = publishedRelease(1, '2026-10-01T00:00:00Z')
+  assert.throws(() => isNewestPublishedRelease(release, []), /absent/)
+  assert.throws(() => isNewestPublishedRelease(release, {}), /inventory/)
+  assert.throws(
+    () => isNewestPublishedRelease(release, [{ ...release, draft: undefined }]),
+    /Invalid GitHub release/,
+  )
+  assert.throws(
+    () =>
+      isNewestPublishedRelease(release, [
+        { ...release, published_at: 'invalid' },
+      ]),
+    /publication time/,
+  )
+  assert.throws(
+    () =>
+      isNewestPublishedRelease(release, [{ ...release, tag_name: 'v10.0.0' }]),
+    /tag changed/,
+  )
+})
+
+test('Pages checks every inventory page and fails closed on API errors', async () => {
+  const release = publishedRelease(1, '2026-10-01T00:00:00Z')
+  const newer = publishedRelease(2, '2026-10-02T00:00:00Z')
+  const options = {
+    repository: 'hypercliq/shutdown-cleanup',
+    token: 'test-token',
+  }
+  const urls = []
+  const releases = await listReleases({
+    ...options,
+    request: async (url, requestOptions) => {
+      urls.push(url)
+      assert.equal(requestOptions.headers.Authorization, 'Bearer test-token')
+      assert.equal(requestOptions.redirect, 'error')
+      return {
+        status: 200,
+        json: async () =>
+          urls.length === 1
+            ? Array.from({ length: 100 }, () => release)
+            : [newer],
+      }
+    },
+  })
+  assert.equal(urls.length, 2)
+  assert.ok(urls[1].endsWith('&page=2'))
+  assert.equal(isNewestPublishedRelease(release, releases), false)
+  for (const status of [401, 403, 404, 429, 500]) {
+    await assert.rejects(
+      listReleases({ ...options, request: async () => ({ status }) }),
+      /deployment stopped/,
+    )
+  }
+  await assert.rejects(
+    listReleases({
+      ...options,
+      request: async () => ({ status: 200, json: async () => ({}) }),
+    }),
+    /inventory/,
+  )
+  await assert.rejects(listReleases({ ...options, token: '' }), /token/)
 })

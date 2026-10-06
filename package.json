@@ -16,18 +16,20 @@
   },
   "scripts": {
     "test": "npm run test:types && npm run test:runtime",
-    "test:release": "node --test tests/release.test.js",
+    "test:release": "node --test tests/release.test.js tests/workflows.test.js",
     "test:portable": "node --test tests/index.test.js tests/subprocess.test.js",
     "test:signals": "node --test tests/signals.test.js",
     "test:runtime": "npm run test:portable && npm run test:signals",
     "test:consumer": "node scripts/test-consumer.js",
     "test:coverage": "c8 npm run test:runtime",
     "test:types": "tsc -p tsconfig.types-test.json",
+    "test:package": "node scripts/test-package.js",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "check": "npm run format:check && npm run lint && npm run test:types && npm run test:release && npm run test:coverage && node scripts/test-package.js",
+    "check:source": "npm run format:check && npm run lint && npm run test:types && npm run test:release && npm run test:coverage",
+    "check": "npm run check:source && node scripts/test-package.js",
     "prepare": "husky"
   },
   "repository": {
@@ -72,6 +74,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.2.0",
     "prettier": "^3.9.6",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "yaml": "^2.9.1"
   }
 }

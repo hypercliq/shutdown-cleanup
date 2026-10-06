@@ -7,32 +7,21 @@ on:
     branches: [main]
   merge_group:
     types: [checks_requested]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   platforms:
+    needs: toolchain
     uses: ./.github/workflows/platform-validation.yml
+    with:
+      artifact-name: ${{ needs.toolchain.outputs.artifact-name }}
 
   toolchain:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: ['22.22.1', 24.x, 26.x]
-
-    steps:
-      - uses: actions/checkout@v7
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v7
-        with:
-          node-version: ${{ matrix.node-version }}
-      - run: npm ci --engine-strict
-      - run: npm run check
-      - name: Upload coverage reports
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-node-${{ matrix.node-version }}
-          path: |
-            coverage/
-            !coverage/tmp/**
-          if-no-files-found: warn
+    uses: ./.github/workflows/package-validation.yml

@@ -4,11 +4,9 @@ on:
   workflow_call:
     inputs:
       artifact-name:
-        description: Exact release archive to validate; otherwise pack the checkout
-        required: false
+        description: Exact archive produced by development and package validation
+        required: true
         type: string
-        default: ''
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,24 +25,16 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24.x
-      - name: Download the built release archive
-        if: inputs.artifact-name != ''
+      - name: Download the validated archive
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.artifact-name }}
           path: ${{ runner.temp }}/release
-      - name: Pack the checkout for consumer validation
-        if: inputs.artifact-name == ''
-        run: |
-          mkdir -p "$RUNNER_TEMP/release"
-          npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/release"
-          mv "$RUNNER_TEMP"/release/hypercliq-shutdown-cleanup-*.tgz "$RUNNER_TEMP/release/package.tgz"
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
+      - name: Verify the shared archive
+        run: node scripts/archive.js verify "$RUNNER_TEMP/release/package.tgz"
       - name: Portable and native OS integration against public package exports
         run: |
           set -o pipefail
@@ -53,7 +43,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: validation-${{ matrix.os }}-node-${{ matrix.node }}
+          name: validation-${{ matrix.os }}-node-${{ matrix.node }}-${{ github.run_attempt }}
           path: platform-validation.log
           if-no-files-found: warn
 
@@ -85,24 +75,16 @@ jobs:
         node: ['22.0.0', 22.x, 24.x, 26.x]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24.x
-      - name: Download the built release archive
-        if: inputs.artifact-name != ''
+      - name: Download the validated archive
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.artifact-name }}
           path: ${{ runner.temp }}/release
-      - name: Pack the checkout for consumer validation
-        if: inputs.artifact-name == ''
-        run: |
-          mkdir -p "$RUNNER_TEMP/release"
-          npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/release"
-          mv "$RUNNER_TEMP"/release/hypercliq-shutdown-cleanup-*.tgz "$RUNNER_TEMP/release/package.tgz"
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
+      - name: Verify the shared archive
+        run: node scripts/archive.js verify "$RUNNER_TEMP/release/package.tgz"
       - name: Dedicated macOS portable and native signal validation
         env:
           EXPECTED_ARCHITECTURE: ${{ matrix.runner.architecture }}
@@ -114,6 +96,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: validation-macos-${{ matrix.runner.architecture }}-node-${{ matrix.node }}
+          name: validation-macos-${{ matrix.runner.architecture }}-node-${{ matrix.node }}-${{ github.run_attempt }}
           path: platform-validation.log
           if-no-files-found: warn

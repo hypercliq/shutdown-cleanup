@@ -3,6 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { copyFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { parseArgs } from 'node:util'
 import {
   projectDirectory,
   testInstalledRuntime,
@@ -16,7 +17,12 @@ const expectedFiles = [
   'index.js',
   'package.json',
 ].toSorted((left, right) => left.localeCompare(right))
-withInstalledPackage(process.argv[2], ({ consumerDirectory, archive }) => {
+const { values, positionals } = parseArgs({
+  options: { 'skip-runtime': { type: 'boolean', default: false } },
+  allowPositionals: true,
+})
+assert.ok(positionals.length <= 1, 'Supply at most one archive')
+withInstalledPackage(positionals[0], ({ consumerDirectory, archive }) => {
   const archiveFiles = execFileSync('tar', ['-tzf', archive], {
     encoding: 'utf8',
     timeout: 10_000,
@@ -120,8 +126,8 @@ setTimeout(() => assert.fail('shutdown did not terminate'), 3000)
       killSignal: 'SIGKILL',
     },
   )
-  testInstalledRuntime(consumerDirectory)
+  if (!values['skip-runtime']) testInstalledRuntime(consumerDirectory)
   console.log(
-    'Package validation passed: five archive files, ESM exports, declarations and installed runtime/native tests',
+    `Package validation passed: five archive files, ESM exports, declarations${values['skip-runtime'] ? '' : ' and installed runtime/native tests'}`,
   )
 })
