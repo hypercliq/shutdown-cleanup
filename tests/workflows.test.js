@@ -94,7 +94,7 @@ test('one required matrix covers all sixteen consumer combinations and architect
   assert.equal(job.strategy['fail-fast'], false)
   assert.equal(job.defaults.run.shell, 'bash')
   const nativeValidation = job.steps.find((step) =>
-    step.run?.includes('npm run test:consumer'),
+    step.run?.includes('npm run test:package -- --runtime-only'),
   )
   assert.equal(
     nativeValidation.env.EXPECTED_ARCHITECTURE,
@@ -147,14 +147,11 @@ test('one archive feeds package resolution, every platform and publication', () 
     1,
   )
   assert.equal(
-    commands.filter((command) => command === 'npm run check:source').length,
+    commands.filter((command) => command.startsWith('npm run check --')).length,
     1,
   )
   assert.ok(
-    commands.some(
-      (command) =>
-        command.includes('test:package') && command.includes('--skip-runtime'),
-    ),
+    commands.includes('npm run check -- "$RUNNER_TEMP/release/package.tgz"'),
   )
   const toolchain = packageValidation.jobs.toolchain
   assert.equal(toolchain.strategy, undefined)

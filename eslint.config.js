@@ -5,7 +5,7 @@ import eslintPluginUnicorn from 'eslint-plugin-unicorn'
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
-    // TypeScript declarations/fixtures are validated by test:types, not ESLint.
+    // TypeScript declarations/fixtures are validated by tsc, not ESLint.
     ignores: ['**/*.ts', 'coverage/**', 'scrap/**', '_site/**'],
   },
   {

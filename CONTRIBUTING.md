@@ -12,7 +12,7 @@ npm test          # Quick declaration and runtime/native checks
 npm run check    # Complete pre-PR gate, including installed-package validation
 ```
 
-For focused declaration checks, use `npm run test:types`. To validate an existing archive, use `npm run check -- /path/to/package.tgz`; for runtime/native checks without the development toolchain, use `npm run test:consumer -- /path/to/package.tgz`. Without an archive, these commands create one.
+`npm run check -- /path/to/package.tgz` validates an existing archive. `npm run test:package -- --runtime-only /path/to/package.tgz` runs full installed runtime/native tests without development dependencies. After development setup, omit the archive to pack once.
 
 ## Changes and fixtures
 

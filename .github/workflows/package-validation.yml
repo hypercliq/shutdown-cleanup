@@ -35,7 +35,6 @@ jobs:
         id: release
         run: node scripts/release.js validate
       - run: npm ci --engine-strict
-      - run: npm run check:source
       - name: Pack once for all package consumers
         id: archive
         env:
@@ -48,8 +47,8 @@ jobs:
           npm pack --ignore-scripts --foreground-scripts=false --pack-destination "$RUNNER_TEMP/release"
           mv "$RUNNER_TEMP"/release/hypercliq-shutdown-cleanup-*.tgz "$RUNNER_TEMP/release/package.tgz"
           node scripts/archive.js seal "$RUNNER_TEMP/release/package.tgz"
-      - name: Check archive contents, public exports and installed declarations
-        run: npm run test:package -- "$RUNNER_TEMP/release/package.tgz" --skip-runtime
+      - name: Check source and installed package
+        run: npm run check -- "$RUNNER_TEMP/release/package.tgz"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.archive.outputs.artifact-name }}

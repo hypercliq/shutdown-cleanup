@@ -15,21 +15,14 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "test": "npm run test:types && npm run test:runtime",
-    "test:release": "node --test tests/release.test.js tests/workflows.test.js",
-    "test:portable": "node --test tests/index.test.js tests/subprocess.test.js",
-    "test:signals": "node --test tests/signals.test.js",
-    "test:runtime": "npm run test:portable && npm run test:signals",
-    "test:consumer": "node scripts/test-consumer.js",
-    "test:coverage": "c8 npm run test:runtime",
-    "test:types": "tsc -p tsconfig.types-test.json",
+    "test": "tsc -p tsconfig.types-test.json && node --test --test-reporter=spec tests/index.test.js tests/subprocess.test.js tests/signals.test.js",
+    "coverage": "c8 node --test --test-reporter=spec tests/index.test.js tests/subprocess.test.js tests/signals.test.js tests/release.test.js tests/workflows.test.js",
     "test:package": "node scripts/test-package.js",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "check:source": "npm run format:check && npm run lint && npm run test:types && npm run test:release && npm run test:coverage",
-    "check": "npm run check:source && node scripts/test-package.js",
+    "check": "prettier --check . && eslint . && tsc -p tsconfig.types-test.json && npm run coverage && node scripts/test-package.js",
     "prepare": "husky"
   },
   "repository": {
