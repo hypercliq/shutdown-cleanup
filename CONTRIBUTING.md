@@ -8,11 +8,13 @@ Consumers require Node.js >=22.0.0. Development requires **22.22.1 on 22.x or 24
 nvm install
 nvm use
 npm ci --engine-strict
-npm run check
-npm run test:consumer
+npm test          # Quick feedback: declarations and runtime/native tests
+npm run check    # Complete pre-PR validation
 ```
 
-`check` covers formatting, lint, types, release policy, runtime coverage, and package contents. `test:consumer` installs a tarball in a temporary ESM project and tests public exports.
+`npm test` is the quick test command. `npm run check` is the complete pre-PR gate: formatting, lint, declarations, release policy, runtime coverage, and packed-package validation. It packs and installs the package once in a temporary ESM project, then checks archive contents, public ESM exports, declaration resolution, and the full runtime/native suite through the installed package. Temporary resources are removed on success or failure.
+
+The `test:*` scripts are internal components for focused debugging and CI; contributors do not need a separate package-validation command. Platform CI uses `npm run test:consumer -- /path/to/package.tgz` to run only the installed runtime/native suite on Node >=22.0.0, without installing the development toolchain. To run the complete gate against an existing archive, use `npm run check -- /path/to/package.tgz`. Both entry points use the supplied archive without repacking, or create one when no archive is supplied.
 
 ## Changes and fixtures
 
@@ -33,7 +35,7 @@ Before claiming macOS support, require every dedicated architecture/version job 
 New releases publish to npm only. Obtain explicit user authorization before publishing a GitHub release or package.
 
 1. Update `package.json` and both root version entries in `package-lock.json`.
-2. Run `npm run check` and `npm run test:consumer`.
+2. Run `npm run check`.
 3. Check the intended revision's complete Linux/Windows matrix, including native console and forced-termination results.
 4. Tag the checked commit `v<version>` and publish its GitHub release when authorized.
 

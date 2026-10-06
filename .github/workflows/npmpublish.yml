@@ -30,7 +30,6 @@ jobs:
         run: node scripts/release.js validate
       - run: npm ci --engine-strict
       - run: npm run check
-      - run: npm run test:consumer
       - uses: actions/setup-node@v7
         with:
           node-version: 24

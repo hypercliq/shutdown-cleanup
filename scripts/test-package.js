@@ -1,15 +1,14 @@
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { copyFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
+import {
+  projectDirectory,
+  testInstalledRuntime,
+  withInstalledPackage,
+} from './package-consumer.js'
 
-const projectDirectory = fileURLToPath(new URL('../', import.meta.url))
-const consumerDirectory = mkdtempSync(
-  path.join(tmpdir(), 'shutdown-cleanup-package-'),
-)
 const expectedFiles = [
   'LICENSE',
   'README.md',
@@ -17,45 +16,11 @@ const expectedFiles = [
   'index.js',
   'package.json',
 ].toSorted((left, right) => left.localeCompare(right))
-const npm = (arguments_, options = {}) =>
-  execFileSync(process.execPath, [process.env.npm_execpath, ...arguments_], {
-    cwd: consumerDirectory,
-    stdio: 'inherit',
-    timeout: 120_000,
-    ...options,
-  })
-
-try {
-  const [packed] = JSON.parse(
-    npm(
-      [
-        'pack',
-        '--ignore-scripts',
-        '--foreground-scripts=false',
-        '--json',
-        '--pack-destination',
-        consumerDirectory,
-      ],
-      {
-        cwd: projectDirectory,
-        encoding: 'utf8',
-        stdio: 'pipe',
-        // Older npm 10 still runs prepare despite --ignore-scripts.
-        env: { ...process.env, HUSKY: '0' },
-      },
-    ),
-  )
-  assert.deepStrictEqual(
-    packed.files
-      .map(({ path: file }) => file)
-      .toSorted((left, right) => left.localeCompare(right)),
-    expectedFiles,
-    'npm pack must contain exactly the five distributable files',
-  )
-  const archive = path.join(consumerDirectory, packed.filename)
+withInstalledPackage(process.argv[2], ({ consumerDirectory, archive }) => {
   const archiveFiles = execFileSync('tar', ['-tzf', archive], {
     encoding: 'utf8',
     timeout: 10_000,
+    killSignal: 'SIGKILL',
   })
     .trim()
     .split('\n')
@@ -67,25 +32,6 @@ try {
       .toSorted((left, right) => left.localeCompare(right)),
     'The archive must exclude tests, coverage, scratch files and development configuration',
   )
-
-  writeFileSync(
-    path.join(consumerDirectory, 'package.json'),
-    JSON.stringify({
-      name: 'isolated-package-smoke',
-      private: true,
-      type: 'module',
-    }),
-  )
-  npm([
-    'install',
-    archive,
-    '--omit=dev',
-    '--ignore-scripts',
-    '--engine-strict',
-    '--no-audit',
-    '--no-fund',
-    '--package-lock=false',
-  ])
 
   // Run only inside the consumer, using the installed package's public name.
   writeFileSync(
@@ -167,11 +113,15 @@ setTimeout(() => assert.fail('shutdown did not terminate'), 3000)
   execFileSync(
     process.execPath,
     [path.join(projectDirectory, 'node_modules/typescript/bin/tsc'), '-p', '.'],
-    { cwd: consumerDirectory, stdio: 'inherit', timeout: 30_000 },
+    {
+      cwd: consumerDirectory,
+      stdio: 'inherit',
+      timeout: 30_000,
+      killSignal: 'SIGKILL',
+    },
   )
+  testInstalledRuntime(consumerDirectory)
   console.log(
-    'Package smoke passed: five archive files, ESM exports, shutdown and declarations',
+    'Package validation passed: five archive files, ESM exports, declarations and installed runtime/native tests',
   )
-} finally {
-  rmSync(consumerDirectory, { recursive: true, force: true })
-}
+})
