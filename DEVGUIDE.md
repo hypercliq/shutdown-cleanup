@@ -4,7 +4,7 @@ This guide covers practical use of `@hypercliq/shutdown-cleanup` in Node.js appl
 
 ## What This Module Does
 
-`shutdown-cleanup` installs process listeners and runs your cleanup handlers before the process exits. It is designed for work such as closing HTTP servers, flushing logs, stopping queues, disconnecting databases, and releasing other external resources.
+`shutdown-cleanup` installs process listeners immediately when imported, even if you never register a handler, and runs your cleanup handlers before the process exits. It is designed for work such as closing HTTP servers, flushing logs, stopping queues, disconnecting databases, and releasing other external resources.
 
 The module supports:
 
@@ -15,23 +15,27 @@ The module supports:
 - A shutdown timeout to avoid hanging forever.
 - TypeScript declarations.
 
-The package is ESM-only and supports Node.js 22.0.0 and newer. This is the consumer runtime minimum; repository development tools require a newer version, as described in [Contributing](CONTRIBUTING.md).
+The package is ESM-only and supports Node.js 22.0.0 and newer. This is the consumer runtime minimum; repository development tools require a newer version, as described in [Contributing](https://github.com/hypercliq/shutdown-cleanup/blob/main/CONTRIBUTING.md).
 
 ## Quick Start
 
 Register cleanup work with `registerHandler`. Handlers run when one of the default shutdown signals is received.
+
+The short JavaScript snippets in this guide are schematic API illustrations, not standalone programs: they may use application-provided functions or imports from preceding snippets. TypeScript signature blocks describe the API. The [complete HTTP example](#complete-example) is standalone and runnable, with all resources defined and no extra dependencies.
 
 ```js
 import { registerHandler } from '@hypercliq/shutdown-cleanup'
 
 registerHandler(async (signal) => {
   console.log(`Shutting down after ${signal}`)
-  await server.close()
+  await closeHttpServer()
   await database.disconnect()
 })
 ```
 
-By default, the module listens for:
+For a standard Node HTTP server, define `closeHttpServer` using the callback-to-Promise wrapper in the complete example. `await server.close()` alone does not wait for closure because `close()` returns the server. The schematic `database.disconnect()` assumes your application's database client returns a Promise that settles when disconnection finishes.
+
+At import time, the module attaches listeners for:
 
 - `SIGTERM`
 - `SIGINT`
@@ -42,14 +46,14 @@ The handler argument is the value emitted by Node.js for the signal or event. Fo
 
 ## Phased Shutdown
 
-Handlers are grouped by phase. Lower numbered phases run first. Handlers in the same phase run in registration order. If no phase is provided, phase `1` is used.
+Handlers are grouped by phase. Lower numbered phases run first. Handlers in the same phase run sequentially in registration order: each returned Promise is awaited before the next handler starts. Phases also run sequentially; the module does not run phased handlers in parallel. If no phase is provided, phase `1` is used.
 
 ```js
 import { registerHandler } from '@hypercliq/shutdown-cleanup'
 
 registerHandler(
   async () => {
-    await server.close()
+    await closeHttpServer()
   },
   {
     identifier: 'closeServer',
@@ -104,7 +108,7 @@ When `shouldTerminate` is `false`, the handler runs without starting shutdown. I
 
 When `shouldTerminate` is omitted or `true`, the signal-specific handler and the normal phased cleanup form one shutdown operation. The shutdown guard and deadline start before the signal-specific handler is invoked. That handler runs first, then the phases run in order. Further terminating signals or events (including `beforeExit`) are ignored throughout this operation, even if they have their own signal-specific handlers. The first trigger's argument is passed to the handler and phases and determines the normal exit code.
 
-If you register a signal-specific handler for a default signal such as `SIGTERM`, the default listener is replaced for that signal. Removing the handler restores the default listener.
+If you register a signal-specific handler for a default signal such as `SIGTERM`, this module's default listener is replaced for that signal. Removing the handler restores that listener. Other application listeners are left attached; coordinate them to avoid premature exit or competing cleanup.
 
 ## Custom Events
 
@@ -146,7 +150,9 @@ removeSignal('SIGHUP')
 
 `SIGKILL` and `SIGSTOP` cannot be handled and will throw if you try to add or register them.
 
-`beforeExit` is already registered by default. You do not need to add it unless you previously removed it.
+`beforeExit` is already registered by default. You do not need to add it unless you previously removed it. It only fires when Node has no more scheduled work: a listening server, referenced interval, or open connection can prevent it. It is not a way to close resources that themselves keep the event loop alive. It does not run on explicit `process.exit()` or uncaught exceptions, and this module does not install `exit`, `uncaughtException`, or `unhandledRejection` listeners. Adding `exit` cannot make asynchronous cleanup reliable because Node permits only synchronous work there. See [Node.js process events](https://nodejs.org/api/process.html#process-events).
+
+`removeSignal` removes only this module's general shutdown listener; it does not remove a signal-specific handler or other application listeners. Use `removeHandler` for a signal-specific registration.
 
 ## Error Handling
 
@@ -203,19 +209,33 @@ setCustomExitCode(0)
 
 Without a custom exit code:
 
-- Numeric signal values are used as-is.
+- Safe integer event arguments are used as-is (including the numeric code from `beforeExit`).
 - `Error` values use `error.errno` when present.
-- POSIX signal names use Node's signal number from `os.constants.signals`.
+- POSIX signal names use Node's signal number from `os.constants.signals`, without adding `128` (for example, `SIGINT` normally yields `2`, `SIGTERM` `15`).
 - Unknown values fall back to `1`.
 
-The custom exit code must be an integer.
+The custom exit code must be a number and a safe integer. The module passes it to `process.exit`; it does not constrain it to the conventional 0–255 range. Node/OS exit-status behavior still applies.
+
+Cleanup errors under `continue` are logged but do not change the normal exit code. Timeout and errors under `stop` exit with `1` unless a custom code is set. A custom code overrides all these paths, so `setCustomExitCode(0)` also reports success after timeout or a stopped cleanup. The module explicitly calls `process.exit()` after phased cleanup, including shutdown triggered by `beforeExit`.
+
+## Debugging
+
+```bash
+DEBUG=shutdown-cleanup node server.mjs
+```
+
+This is POSIX shell syntax; set the environment variable using your shell's equivalent on other platforms. Logging uses `console.debug` with a `shutdown-cleanup` prefix and includes registration, signal handling, shutdown progress, and exit code. `DEBUG` is captured when the module is imported, so set it before starting Node. Logging is enabled when the value contains `shutdown-cleanup` or is exactly `*`. Matching is a simple regular expression, not the `debug` package's namespace or exclusion syntax: even `-shutdown-cleanup` matches. No debugging dependency is needed. Errors and timeout warnings are logged regardless of `DEBUG`.
 
 ## Inspecting and Removing Handlers
 
 Use explicit identifiers when you expect to inspect or remove handlers later.
 
 ```js
-import { listHandlers, removeHandler } from '@hypercliq/shutdown-cleanup'
+import {
+  listHandlers,
+  registerHandler,
+  removeHandler,
+} from '@hypercliq/shutdown-cleanup'
 
 const identifier = registerHandler(cleanup, {
   identifier: 'cleanup',
@@ -336,7 +356,7 @@ Sets the process exit code used after shutdown.
 setCustomExitCode(code: number): void
 ```
 
-The exit code must be an integer.
+The exit code must be a number and a safe integer; it overrides normal completion, timeout, and `stop` errors.
 
 ## TypeScript
 
@@ -357,9 +377,15 @@ import type {
 type Handler = (signal: string | number | Error) => Promise<void> | void
 ```
 
+This declaration describes the expected argument types; the runtime forwards the first process-event argument without validating it. A custom event with no argument can supply `undefined`, and other payload types are possible in JavaScript. Supply an argument matching `Handler` when using TypeScript.
+
 ## Complete Example
 
+Install the package, save the following as `server.mjs`, and run `node server.mjs` on Node.js 22.0.0 or newer. It uses only Node built-ins and `@hypercliq/shutdown-cleanup`; there is no database or other undefined resource.
+
 ```js
+import { once } from 'node:events'
+import { createServer } from 'node:http'
 import {
   registerHandler,
   setCustomExitCode,
@@ -367,32 +393,48 @@ import {
   setShutdownTimeout,
 } from '@hypercliq/shutdown-cleanup'
 
+const server = createServer((_request, response) => {
+  response.end('Hello\n')
+})
+
+const closeHttpServer = () =>
+  new Promise((resolve, reject) => {
+    server.close((error) => {
+      if (error) reject(error)
+      else resolve()
+    })
+  })
+
 setShutdownTimeout(20_000)
-setErrorHandlingStrategy('continue')
+setErrorHandlingStrategy('stop')
 setCustomExitCode(0)
 
-registerHandler(
-  async () => {
-    await server.close()
-  },
-  {
-    identifier: 'closeServer',
-    phase: 1,
-  },
-)
+registerHandler(closeHttpServer, { identifier: 'closeServer', phase: 1 })
+registerHandler(() => console.log('HTTP server closed'), { phase: 2 })
 
-registerHandler(
-  async () => {
-    await database.disconnect()
-  },
-  {
-    identifier: 'disconnectDatabase',
-    phase: 2,
-  },
-)
+server.listen(0, '127.0.0.1')
+await once(server, 'listening')
+console.log(`Listening at http://127.0.0.1:${server.address().port}`)
+console.log(`Send SIGTERM to PID ${process.pid}, or press Ctrl+C`)
 ```
 
+Open the printed URL, then press Ctrl+C, or run `kill -TERM <printed-pid>` in a second terminal on POSIX systems. Phase 1 stops accepting new connections and waits for the HTTP close callback; phase 2 runs only after closure. The wrapper preserves `server` as the receiver and rejects callback errors. This example uses `stop` so a closure error skips the success message. Its custom code of `0` overrides even errors and timeout; remove that setting if you want the default policy.
+
+Node's [`server.close(callback)`](https://nodejs.org/api/http.html#serverclosecallback) waits for active HTTP connections to finish and closes idle connections on supported Node versions. Long-running requests can exhaust the shutdown budget. Upgraded connections such as WebSockets need their own cleanup; this example creates none. The library timeout forces process exit rather than guaranteeing that every connection finishes.
+
 ## Migration From Older Versions
+
+### Version 8 runtime and validation changes
+
+Version 8 raises the consumer runtime requirement from **Node.js >=18** in version 7.0.1 to **Node.js >=22** in version 8.0.0. Upgrade deployment images, local runtimes, and process-manager/CI runtime settings before upgrading the package. Node.js 18, 19, 20, and 21 are no longer supported. Version 8 uses iterator helpers and `Array.prototype.toSorted`; transpiling import syntax alone does not supply these runtime features. The current `>=22.0.0` spelling preserves the version-8 minimum.
+
+This is verified by the tagged [v7.0.1 package manifest](https://github.com/hypercliq/shutdown-cleanup/blob/v7.0.1/package.json), [v8.0.0 manifest](https://github.com/hypercliq/shutdown-cleanup/blob/v8.0.0/package.json), and [runtime changes](https://github.com/hypercliq/shutdown-cleanup/compare/v7.0.1...v8.0.0). The [Node 24 tooling update](https://github.com/hypercliq/shutdown-cleanup/commit/62b85c2c97c83188e7338ca4691f3df43bfb0a65) did not raise `engines.node` to 24. Repository tooling has its own minimum in Contributing.
+
+Version 8 also stopped coercing phase values with `parseInt`: pass positive safe integers, not strings or fractions. Shutdown timeout values must be positive finite numbers, and custom exit codes must be numeric safe integers. Under `continue`, a failed terminating signal-specific handler now proceeds to phased cleanup; version 7 could skip that cleanup on rejection.
+
+### Subsequent implementation changes
+
+The following describes the finalized implementation in this checkout, including changes after the v8.0.3 tag; it should not be read as a claim that all of these behaviors shipped in v8.0.0.
 
 Registration now validates inputs before changing the registry or replacing listeners. This fixes empty groups left behind by invalid phases and uncatchable signals. It also tightens JavaScript validation to match the declared option types: primitives, arrays, and functions used as options, non-string identifiers or signals, `phase: null`, non-boolean `shouldTerminate` values, and `shouldTerminate` without a signal are rejected. Earlier versions could accept these values through destructuring, truthiness, or ignored options; this is a compatibility change for callers relying on those behaviors. Use an options object, string identifiers and event names, numeric phases, and boolean termination flags; omit optional values or use `undefined` for defaults. Values are not coerced to strings or booleans.
 
@@ -401,6 +443,10 @@ Empty string identifiers, arbitrary string process event names, inherited option
 Phased cleanup now uses a fixed snapshot taken when shutdown starts. Previously, newly registered handlers could run if added to a current or future phase, and handlers registered by a terminating signal-specific handler could join the subsequent phases. Those registrations are now excluded from the active cleanup; perform and await any required late cleanup directly instead. Removing pending handlers remains supported, and removing the last handler in a future phase now safely skips it instead of throwing. Phase ordering, registration ordering, and exit-code conventions are unchanged.
 
 Terminating signal-specific handlers now run inside the shutdown guard and timeout. Previously, their runtime was outside the timeout, repeated events could invoke them more than once, and a competing default signal or `beforeExit` could start phases before they finished. Applications relying on that behavior should account for the signal-specific handler's runtime in `setShutdownTimeout` and use `shouldTerminate: false` for repeatable signal actions. This changes when cleanup can be interrupted or skipped; it adds no public API and leaves exit-code conventions unchanged.
+
+### Version 7 registration API
+
+These old/new snippets are schematic migration illustrations using application-provided `cleanup`.
 
 Version 7 unified the old phase and signal registration APIs behind `registerHandler`.
 
@@ -456,7 +502,7 @@ registerHandler(
 )
 ```
 
-If you were importing `registerSignalHandler` or `registerPhaseHandler`, replace those imports with `registerHandler` and pass an options object.
+Replace the old `registerSignalHandler` import with `registerHandler`. For existing phased `registerHandler` calls, replace positional identifier and phase arguments with an options object.
 
 ## Operational Notes
 
