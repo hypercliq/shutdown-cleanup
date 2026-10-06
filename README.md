@@ -1,47 +1,45 @@
 # @hypercliq/shutdown-cleanup
 
 [![npm](https://img.shields.io/npm/v/@hypercliq/shutdown-cleanup)](https://www.npmjs.com/package/@hypercliq/shutdown-cleanup)
-[![npm downloads](https://img.shields.io/npm/dw/@hypercliq/shutdown-cleanup)](https://www.npmjs.com/package/@hypercliq/shutdown-cleanup)
 [![CI](https://github.com/hypercliq/shutdown-cleanup/actions/workflows/node.js.yml/badge.svg)](https://github.com/hypercliq/shutdown-cleanup/actions/workflows/node.js.yml)
-[![license](https://img.shields.io/npm/l/@hypercliq/shutdown-cleanup)](LICENSE)
 
-Phased graceful shutdown for Node.js — register async cleanup handlers that run in order when your process receives `SIGTERM`, `SIGINT`, `SIGHUP`, or `beforeExit`.
+Phased graceful shutdown for Node.js. Register synchronous or async cleanup handlers; they run sequentially in phase order on shutdown signals, custom process events, or natural `beforeExit`. Includes TypeScript declarations, error strategies, and a shutdown deadline.
 
-## Quick start
+## Install
+
+Requires **Node.js >=22.0.0**; ESM-only.
+
+```sh
+npm install @hypercliq/shutdown-cleanup
+```
+
+## Minimal example
+
+Save as `server.mjs`, run `node server.mjs`, then press Ctrl+C:
 
 ```js
+import { createServer } from 'node:http'
 import { registerHandler } from '@hypercliq/shutdown-cleanup'
 
-registerHandler(async (signal) => {
-  await server.close()
-  await db.disconnect()
-})
+const server = createServer((_request, response) => response.end('Hello\n'))
+
+registerHandler(
+  () =>
+    new Promise((resolve, reject) => {
+      server.close((error) => {
+        if (error) reject(error)
+        else resolve()
+      })
+    }),
+  { identifier: 'http', phase: 1 },
+)
+
+server.listen(3000, '127.0.0.1')
 ```
 
-## Features
+The Promise waits for HTTP closure.
 
-- **Phased execution** — group handlers into numbered phases, run in order
-- **Signal-specific handlers** — attach custom logic to one signal without triggering full shutdown
-- **Sync and async** — both handler types work transparently
-- **Error strategies** — `continue` (default) or `stop` on handler failure
-- **Shutdown timeout** — force-exits if cleanup hangs (default 30 s)
-- **Custom exit codes**
-- **TypeScript** declarations included
-- **ESM-only**, Node.js ≥ 22
-
-## Installation
-
-```bash
-npm install @hypercliq/shutdown-cleanup
-# or
-yarn add @hypercliq/shutdown-cleanup
-# or
-pnpm add @hypercliq/shutdown-cleanup
-```
-
-## Documentation
-
-Full API reference, phased shutdown examples, signal-specific handlers, error strategies, and best practices in the **[Developer Guide](https://hypercliq.github.io/shutdown-cleanup/DEVGUIDE.html)**.
+See the **[consumer guide](https://hypercliq.github.io/shutdown-cleanup/DEVGUIDE.html)** ([source](https://github.com/hypercliq/shutdown-cleanup/blob/main/DEVGUIDE.md)) for the API, platform limitations, timeout and exit-code policy, and migration notes, including GitHub Packages retirement.
 
 ## License
 

@@ -9,7 +9,7 @@ import {
   setCustomExitCode,
   setErrorHandlingStrategy,
   setShutdownTimeout,
-} from '../index.js'
+} from '@hypercliq/shutdown-cleanup'
 
 const [flag, ...rest] = process.argv.slice(2)
 
@@ -103,36 +103,25 @@ const handleHandlerRegistration = (action, parameters) => {
     }
 
     case 'with-signal-and-phase': {
-      // try {
       registerHandler(() => {}, {
         signal: 'SIGTERM',
         phase: 1,
       })
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
 
       break
     }
 
     case 'with-invalid-phase': {
-      // try {
       const phase = parameters[0] === 'fractional' ? 1.5 : 0
 
       registerHandler(() => {}, {
         phase,
       })
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
 
       break
     }
 
     case 'with-duplicate-identifier': {
-      // try {
       const identifier = parameters[0]
       registerHandler(() => {}, {
         identifier: identifier,
@@ -140,23 +129,14 @@ const handleHandlerRegistration = (action, parameters) => {
       registerHandler(() => {}, {
         identifier: identifier,
       })
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
 
       break
     }
 
     case 'with-uncatchable-signal': {
-      // try {
       registerHandler(() => {}, {
         signal: 'SIGKILL',
       })
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
 
       break
     }
@@ -229,21 +209,6 @@ const handlePhaseHandling = (phaseType) => {
 }
 
 switch (flag) {
-  case '--handle-default-signal': {
-    {
-      const defaultSignal = rest[0]
-      registerHandler(async () => {
-        console.log(`Handled default signal: ${defaultSignal}`)
-      })
-
-      defaultSignal === 'beforeExit'
-        ? process.emit(defaultSignal, 0)
-        : process.kill(process.pid, defaultSignal)
-    }
-
-    break
-  }
-
   case '--list-default-signals': {
     {
       const defaultSignals = listSignals()
@@ -255,24 +220,6 @@ switch (flag) {
 
   case '--register-handler': {
     handleHandlerRegistration(rest[0], rest.slice(1))
-
-    break
-  }
-
-  case '--handle-posix-signal': {
-    {
-      const signal = rest[0]
-      registerHandler(
-        async () => {
-          console.log(`Handled signal: ${signal}`)
-        },
-        {
-          signal,
-        },
-      )
-
-      process.kill(process.pid, signal)
-    }
 
     break
   }
@@ -289,7 +236,6 @@ switch (flag) {
       const signal = rest[0]
       const duplicate = rest[1]
 
-      // try {
       results.added = addSignal(signal)
 
       if (duplicate) {
@@ -300,10 +246,6 @@ switch (flag) {
       results.removed = removeSignal(signal)
       results.listAfter = listSignals()
       console.log(JSON.stringify(results))
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
     }
 
     break
@@ -314,12 +256,7 @@ switch (flag) {
       const strategy = rest[0]
       const scenario = rest[1]
 
-      // try {
       setErrorHandlingStrategy(strategy)
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
 
       if (scenario === 'signal-handler') {
         registerHandler(
@@ -328,7 +265,7 @@ switch (flag) {
           },
           {
             identifier: 'failingSignalHandler',
-            signal: 'SIGTERM',
+            signal: 'app:shutdown',
           },
         )
         registerHandler(
@@ -339,7 +276,8 @@ switch (flag) {
             identifier: 'handlerAfterFailedSignalHandler',
           },
         )
-        process.kill(process.pid, 'SIGTERM')
+        addSignal('app:shutdown')
+        process.emit('app:shutdown', 1)
       } else {
         registerHandler(
           () => {
@@ -378,7 +316,8 @@ switch (flag) {
             setTimeout(resolve, delay)
           }),
       )
-      process.kill(process.pid, 'SIGTERM')
+      addSignal('app:shutdown')
+      process.emit('app:shutdown', 1)
     }
 
     break
@@ -388,15 +327,10 @@ switch (flag) {
     {
       const exitCode = rest[0]
       const exitCodeValue = rest[1] === 'raw' ? exitCode : Number(exitCode)
-      // try {
       setCustomExitCode(exitCodeValue)
       registerHandler(async () => {
         console.log('Handler for exit')
       })
-      // } catch (error) {
-      //   console.error(error.message)
-      //   process.exit(1) // eslint-disable-line unicorn/no-process-exit
-      // }
     }
 
     break

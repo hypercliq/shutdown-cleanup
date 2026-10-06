@@ -1,0 +1,11 @@
+{
+  "all": true,
+  "include": ["index.js"],
+  "clean": true,
+  "reporter": ["html", "lcovonly", "json-summary", "text-summary"],
+  "check-coverage": true,
+  "lines": 97,
+  "statements": 97,
+  "branches": 97,
+  "functions": 100
+}

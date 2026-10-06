@@ -2,52 +2,53 @@ name: Node.js Package
 
 on:
   release:
-    types: [created]
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shutdown-cleanup-release
+  cancel-in-progress: false
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-      - run: npm ci
-      - run: npm run lint
-      - run: npm t
+    uses: ./.github/workflows/package-validation.yml
+    with:
+      release: true
+
+  validate-platforms:
+    needs: build
+    uses: ./.github/workflows/platform-validation.yml
+    with:
+      artifact-name: ${{ needs.build.outputs.artifact-name }}
 
   publish-npm:
-    needs: build
+    needs: [build, validate-platforms]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+          package-manager-cache: false
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
-      - run: npm publish --access public
-
-  publish-gpr:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/download-artifact@v4
         with:
-          node-version: 24
-          registry-url: https://npm.pkg.github.com/
-          scope: '@hypercliq'
-      - run: npm ci
-      - run: npm publish
+          name: ${{ needs.build.outputs.artifact-name }}
+          path: ${{ runner.temp }}/release
+      - name: Publish or verify existing npm version
+        run: node scripts/release.js publish https://registry.npmjs.org/ "$RUNNER_TEMP/release/package.tgz" "$DIST_TAG"
         env:
-          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          DIST_TAG: ${{ needs.build.outputs.dist-tag }}
 
   publish-pages:
-    needs: [publish-npm, publish-gpr]
+    needs: [build, validate-platforms, publish-npm]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,13 +59,37 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/configure-pages@v6
-      - uses: actions/jekyll-build-pages@v1
         with:
-          source: ./
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Check documentation release freshness
+        id: freshness
+        run: node scripts/pages-release.js
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/configure-pages@v6
+        if: steps.freshness.outputs.deploy == 'true'
+      - name: Stage consumer documentation
+        if: steps.freshness.outputs.deploy == 'true'
+        run: |
+          mkdir -p .pages-source
+          cp README.md .pages-source/index.md
+          cp DEVGUIDE.md LICENSE logo-io.png _config.yml .pages-source/
+      - uses: actions/jekyll-build-pages@v1
+        if: steps.freshness.outputs.deploy == 'true'
+        with:
+          source: ./.pages-source
           destination: ./_site
       - uses: actions/upload-pages-artifact@v5
+        if: steps.freshness.outputs.deploy == 'true'
         with:
           path: ./_site
+          name: github-pages-${{ github.run_attempt }}
       - id: deployment
+        if: steps.freshness.outputs.deploy == 'true'
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}

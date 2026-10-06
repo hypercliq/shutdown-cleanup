@@ -1,0 +1,68 @@
+name: Development and package validation
+
+on:
+  workflow_call:
+    inputs:
+      release:
+        description: Validate published release metadata before building
+        type: boolean
+        default: false
+    outputs:
+      artifact-name:
+        value: ${{ jobs.toolchain.outputs.artifact-name }}
+      dist-tag:
+        value: ${{ jobs.toolchain.outputs.dist-tag }}
+
+permissions:
+  contents: read
+
+jobs:
+  toolchain:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.archive.outputs.artifact-name }}
+      dist-tag: ${{ steps.release.outputs.dist-tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Validate release metadata
+        if: inputs.release
+        id: release
+        run: node scripts/release.js validate
+      - run: npm ci --engine-strict
+      - name: Pack once for all package consumers
+        id: archive
+        env:
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          # npm 10 can still run prepare despite --ignore-scripts.
+          HUSKY: '0'
+        run: |
+          echo "artifact-name=validated-package-$RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/release"
+          npm pack --ignore-scripts --foreground-scripts=false --pack-destination "$RUNNER_TEMP/release"
+          mv "$RUNNER_TEMP"/release/hypercliq-shutdown-cleanup-*.tgz "$RUNNER_TEMP/release/package.tgz"
+          node scripts/archive.js seal "$RUNNER_TEMP/release/package.tgz"
+      - name: Check source and installed package
+        run: npm run check -- "$RUNNER_TEMP/release/package.tgz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.archive.outputs.artifact-name }}
+          path: |
+            ${{ runner.temp }}/release/package.tgz
+            ${{ runner.temp }}/release/package.tgz.sha512
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload source coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-node-development-${{ github.run_attempt }}
+          path: |
+            coverage/
+            !coverage/tmp/**
+          if-no-files-found: warn
