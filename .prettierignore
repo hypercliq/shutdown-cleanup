@@ -8,3 +8,5 @@ _site/
 scrap/
 *.tgz
 *.log
+
+.pages-source/

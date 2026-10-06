@@ -97,9 +97,14 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions/configure-pages@v6
+      - name: Stage consumer documentation
+        run: |
+          mkdir -p .pages-source
+          cp README.md .pages-source/index.md
+          cp DEVGUIDE.md LICENSE logo-io.png _config.yml .pages-source/
       - uses: actions/jekyll-build-pages@v1
         with:
-          source: ./
+          source: ./.pages-source
           destination: ./_site
       - uses: actions/upload-pages-artifact@v5
         with:
