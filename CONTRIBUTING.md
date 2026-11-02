@@ -24,6 +24,19 @@ Test native OS delivery with `tests/signal-fixture.js`, never substitute `proces
 
 ## Platform validation
 
+PRs, merge-queue entries and manual CI runs perform full validation. After a push
+to `main`, a read-only planner reuses a successful PR run only when its recorded
+synthetic merge commit has the previous `main` and the PR head as parents, its
+tree matches the pushed content, and the toolchain, all sixteen platform jobs
+and support gate actually succeeded. Direct pushes, changed bases, unavailable
+evidence and planner failures run full validation. Release validation runs
+independently and is never skipped by this reuse policy.
+
+`main` requires PRs and up-to-date CodeQL, toolchain and platform-gate checks.
+Repository administrators (including organization owners) may bypass these
+requirements for exceptional direct pushes, which still trigger CI. Other roles
+cannot bypass them. Force pushes and branch deletion are prohibited for everyone.
+
 Require packed-package validation on Linux x64, Windows x64, macOS ARM64, and macOS Intel x64 with Node 22.0.0, current 22.x, 24.x, and 26.x. Review native signal, console, and forced-termination results for every target. Use **Node.js CI → Run workflow** for manual validation. See the [consumer limitations](DEVGUIDE.md#platforms-and-limitations) when testing application environments.
 
 ## Releases

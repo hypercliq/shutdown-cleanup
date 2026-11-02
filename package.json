@@ -16,7 +16,7 @@
   },
   "scripts": {
     "test": "tsc -p tsconfig.types-test.json && node --test --test-reporter=spec tests/index.test.js tests/subprocess.test.js tests/signals.test.js",
-    "coverage": "c8 node --test --test-reporter=spec tests/index.test.js tests/subprocess.test.js tests/signals.test.js tests/release.test.js tests/workflows.test.js",
+    "coverage": "c8 node --test --test-reporter=spec tests/index.test.js tests/subprocess.test.js tests/signals.test.js tests/release.test.js tests/workflows.test.js tests/ci-validation.test.js",
     "test:package": "node scripts/test-package.js",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
