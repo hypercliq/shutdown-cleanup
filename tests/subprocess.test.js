@@ -186,10 +186,37 @@ describe('Subprocess test helper', () => {
     )
   }
 
+  it('reports captured output at the watchdog deadline', async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] })
+    const child = new EventEmitter() // eslint-disable-line unicorn/prefer-event-target -- Model ChildProcess events.
+    child.stdout = new PassThrough()
+    child.stderr = new PassThrough()
+    child.kill = t.mock.fn(() => true)
+    const result = assert.rejects(
+      runSubprocess({ arguments_: [], timeoutMs: 1000 }, () => child),
+      (error) => {
+        assert.match(error.message, /timed out after 1000ms/)
+        assert.match(error.message, /stdout: partial stdout/)
+        assert.match(error.message, /stderr: partial stderr/)
+        return true
+      },
+    )
+    child.stdout.write('partial stdout')
+    child.stderr.write('partial stderr')
+    t.mock.timers.tick(999)
+    assert.strictEqual(child.kill.mock.callCount(), 0)
+    t.mock.timers.tick(1)
+    await result
+    assert.deepStrictEqual(child.kill.mock.calls[0].arguments, ['SIGKILL'])
+    assert.strictEqual(child.stdout.destroyed, true)
+    assert.strictEqual(child.stderr.destroyed, true)
+  })
+
   it(
-    'times out, reports captured output and kills a stuck child',
+    'kills a ready stuck child when the watchdog expires',
     { timeout: 5000 },
     async (t) => {
+      t.mock.timers.enable({ apis: ['setTimeout'] })
       let child
       let closed
       t.after(() => child?.kill('SIGKILL'))
@@ -200,12 +227,14 @@ describe('Subprocess test helper', () => {
               '--eval',
               `
               process.on('SIGTERM', () => {})
-              process.stdout.write('partial stdout')
-              process.stderr.write('partial stderr')
               setInterval(() => {}, 1000)
+              process.send('ready')
             `,
             ],
             timeoutMs: 1000,
+            // Exercise real termination only after the child has installed its
+            // signal handler; startup speed must not decide this test's result.
+            onReady: () => t.mock.timers.tick(1000),
           },
           (...arguments_) => {
             child = spawn(...arguments_)
@@ -213,12 +242,7 @@ describe('Subprocess test helper', () => {
             return child
           },
         ),
-        (error) => {
-          assert.match(error.message, /timed out after 1000ms/)
-          assert.match(error.message, /stdout: partial stdout/)
-          assert.match(error.message, /stderr: partial stderr/)
-          return true
-        },
+        /timed out after 1000ms/,
       )
       const [, signal] = await closed
       assert.strictEqual(signal, 'SIGKILL')
