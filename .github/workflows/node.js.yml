@@ -1,4 +1,5 @@
 name: Node.js CI
+run-name: Node.js CI / ${{ github.event_name }} / ${{ github.sha }} / PR ${{ github.event.pull_request.number || 0 }}
 
 on:
   push:
@@ -17,11 +18,36 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  validation-plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      run: ${{ steps.plan.outputs.run }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Decide whether this revision needs full validation
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/ci-validation.js
+
   platforms:
     needs: toolchain
+    if: ${{ always() && !cancelled() && needs.toolchain.result == 'success' }}
     uses: ./.github/workflows/platform-validation.yml
     with:
       artifact-name: ${{ needs.toolchain.outputs.artifact-name }}
 
   toolchain:
+    needs: validation-plan
+    if: ${{ always() && !cancelled() && needs.validation-plan.outputs.run != 'false' }}
     uses: ./.github/workflows/package-validation.yml

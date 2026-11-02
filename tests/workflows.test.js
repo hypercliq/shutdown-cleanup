@@ -21,6 +21,37 @@ const packageValidation = workflow('package-validation.yml')
 const action = (job, name) =>
   job.steps.find((step) => step.uses?.startsWith(`${name}@`))
 
+test('only proven reuse skips CI; a failed planner still runs full validation', () => {
+  assert.equal(
+    ci['run-name'],
+    'Node.js CI / ${{ github.event_name }} / ${{ github.sha }} / PR ${{ github.event.pull_request.number || 0 }}',
+  )
+  assert.deepEqual(ci.on.push.branches, ['main'])
+  assert.ok(ci.on.pull_request)
+  assert.ok(ci.on.merge_group)
+  assert.ok(Object.hasOwn(ci.on, 'workflow_dispatch'))
+  assert.equal(ci.jobs.toolchain.needs, 'validation-plan')
+  assert.equal(
+    ci.jobs.toolchain.if,
+    "${{ always() && !cancelled() && needs.validation-plan.outputs.run != 'false' }}",
+  )
+  assert.equal(
+    ci.jobs.platforms.if,
+    "${{ always() && !cancelled() && needs.toolchain.result == 'success' }}",
+  )
+  const planner = ci.jobs['validation-plan']
+  assert.deepEqual(planner.permissions, {
+    contents: 'read',
+    actions: 'read',
+    'pull-requests': 'read',
+  })
+  assert.equal(planner.outputs.run, '${{ steps.plan.outputs.run }}')
+  assert.equal(
+    planner.steps.find((step) => step.id === 'plan').run,
+    'node scripts/ci-validation.js',
+  )
+})
+
 test('publication requires development checks and the Linux/Windows/macOS support gate', () => {
   assert.ok([release.jobs['publish-npm'].needs].flat().includes('build'))
   assert.ok(
