@@ -177,10 +177,12 @@ export function removeSignal(signal: string): boolean
 /**
  * Sets a numeric safe integer exit code, overriding normal completion, timeout,
  * and stop-on-error exits, including code 0. No 0-255 range restriction is applied.
- * Without an override, completion uses a safe integer event argument, Error.errno
- * when non-nullish, or os.constants.signals for a signal name (without adding 128),
- * falling back to 1. Timeout and stop-on-error use 1. Errors under continue do not
- * change the completion code. Node/OS exit-status behavior still applies.
+ * Without an override, completion uses a safe integer event argument, a valid
+ * Error.errno, or os.constants.signals for a signal name (without adding 128).
+ * Error.errno accepts safe integers and nonempty strings that convert to safe
+ * integers. Invalid or missing codes, timeout, and stop-on-error use 1. Errors
+ * under continue do not change the completion code. Node/OS exit-status
+ * behavior still applies.
  * @param code The custom exit code to be used.
  * @example
  * setCustomExitCode(0);

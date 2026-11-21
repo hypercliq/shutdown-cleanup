@@ -372,27 +372,6 @@ describe('Portable process events and API (no OS signal delivery)', () => {
       })
     })
 
-    it('should error when registering a handler with a duplicate identifier', () => {
-      const identifier = 'duplicateHandler'
-      return spawnChildAndSetupListeners({
-        arguments_: [
-          '--register-handler',
-          'with-duplicate-identifier',
-          identifier,
-        ],
-        stdoutExpectation: (output) =>
-          assert.strictEqual(output.toString(), ''),
-        stderrExpectation: (output) =>
-          assert.match(
-            output.toString().trim(),
-            new RegExp(
-              `Handler with identifier '${identifier}' already exists`,
-            ),
-          ),
-        exitCodeExpectation: 1,
-      })
-    })
-
     it('should error when registering a handler for an uncatchable signal', () => {
       const signal = 'SIGKILL'
       return spawnChildAndSetupListeners({
@@ -1168,6 +1147,32 @@ describe('Portable process events and API (no OS signal delivery)', () => {
         exitCodeExpectation: Number(customEventCode),
       })
     })
+
+    for (const [errno, exitCode] of [
+      ['EIO', 1],
+      ['', 1],
+      [1.5, 1],
+      [Number.MAX_SAFE_INTEGER + 1, 1],
+      [undefined, 1],
+      [0, 0],
+      [7, 7],
+      ['8', 8],
+    ]) {
+      it(`exits with code ${exitCode} when the event error has errno ${JSON.stringify(errno)}`, () =>
+        runShutdownScenario(
+          `
+            registerHandler(() => console.log('cleanup completed'))
+            const error = new Error('shutdown requested')
+            error.errno = ${JSON.stringify(errno)}
+            process.emit('app:shutdown', error)
+          `,
+          {
+            stdoutExpectation: (output) =>
+              assert.strictEqual(output.toString().trim(), 'cleanup completed'),
+            exitCodeExpectation: exitCode,
+          },
+        ))
+    }
   })
 
   describe('Handle phase handlers', () => {

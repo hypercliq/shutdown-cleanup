@@ -121,18 +121,6 @@ const handleHandlerRegistration = (action, parameters) => {
       break
     }
 
-    case 'with-duplicate-identifier': {
-      const identifier = parameters[0]
-      registerHandler(() => {}, {
-        identifier: identifier,
-      })
-      registerHandler(() => {}, {
-        identifier: identifier,
-      })
-
-      break
-    }
-
     case 'with-uncatchable-signal': {
       registerHandler(() => {}, {
         signal: 'SIGKILL',

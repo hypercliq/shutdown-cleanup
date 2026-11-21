@@ -64,7 +64,7 @@ process.emit('app:shutdown', 0)
 
 A signal-specific registration replaces this module's general listener for that event; removing the handler restores it if the event was in the general trigger set. `removeSignal` removes only the general listener, not a signal-specific handler or other application listeners. Use `removeHandler` for signal-specific registrations. Failed listener attachment leaves no recorded active signal.
 
-For custom shutdown events, a numeric first argument is the clearest way to select the exit code. Close over the event name if you need it inside the handler.
+Close over the event name if you need it inside the handler. See [exit-code selection](#errors-deadline-and-exit-codes) to choose the process status for a custom event.
 
 ## Errors, deadline, and exit codes
 
@@ -90,11 +90,13 @@ The timeout uses Node's `setTimeout`: synchronous blocking or event-loop starvat
 Without a custom code, normal completion uses:
 
 - Safe integer event arguments as-is, including `beforeExit` codes.
-- An `Error`'s `errno` when present.
+- An `Error`'s `errno` if it is a safe integer or a nonempty string that converts to a safe integer. Missing or invalid values such as `'EIO'` give exit code `1`.
 - Node's signal number for recognized signal names, **without adding 128** (for example, `SIGINT` normally gives `2`, `SIGTERM` `15`).
 - `1` for unknown values.
 
-Errors under `continue` do not change that normal code. Timeout and `stop` errors use `1`. A custom exit code overrides **all** these paths: setting `0` also reports success after failure or timeout. Codes must be numeric safe integers; the package imposes no 0–255 restriction, though Node/OS status handling still applies. Cleanup ends with an explicit `process.exit()`, including after `beforeExit`.
+For a custom event, pass a safe integer as the first argument to select the exit code. If handlers need a different payload, use `setCustomExitCode` to set the status independently. In `phased-shutdown@9.0.1`, set a custom exit code before emitting an `Error` with a nonnumeric `errno` such as `'EIO'` to avoid an exception during exit.
+
+Errors under `continue` leave the normal code in place. Timeout and `stop` errors use `1`. `setCustomExitCode` overrides **all** these paths, so setting `0` also reports success after failure or timeout. The setter takes any numeric safe integer, subject to Node and OS status handling. Cleanup ends with an explicit `process.exit()`, including after `beforeExit`.
 
 ## API reference
 
@@ -155,10 +157,10 @@ The new package keeps the version 9 API and Node.js requirement. If you use an e
 
 ### GitHub Packages retirement
 
-From **6 October 2026**, new releases publish only to npm. **8.0.3** is the final GitHub Packages release; existing versions remain available. Update your project's `.npmrc` and refresh registry URLs in its lockfile:
+**8.0.3** is the final GitHub Packages release. Existing versions remain available there. The unscoped `phased-shutdown` package installs from npm without an `@hypercliq` registry mapping. If you still install an older scoped release that is available on npm, check your other `@hypercliq` dependencies before changing the scope-wide mapping in `.npmrc`.
 
 ```ini
 @hypercliq:registry=https://registry.npmjs.org/
 ```
 
-Check other `@hypercliq` dependencies before changing this scope-wide mapping. Version **8.0.0** exists only on GitHub Packages; retain its registry or test a compatible npm version.
+Refresh the affected registry URLs in your lockfile after changing the mapping. Keep the GitHub Packages registry while you depend on **8.0.0**, which is available only there, or first test a compatible version from npm.

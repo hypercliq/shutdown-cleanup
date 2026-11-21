@@ -336,16 +336,15 @@ const listSignals = ({ includeSignalHandlers = false } = {}) => {
 const DEFAULT_EXIT_CODE = 1
 
 const getExitCode = (value) => {
-  let code
-  if (Number.isSafeInteger(value)) {
-    code = value
-  } else if (value instanceof Error) {
-    code = value.errno
-  } else {
-    code = os.constants.signals[value]
+  if (Number.isSafeInteger(value)) return value
+  if (value instanceof Error) {
+    const { errno } = value
+    const code =
+      typeof errno === 'string' && errno !== '' ? Number(errno) : errno
+    return Number.isSafeInteger(code) ? code : DEFAULT_EXIT_CODE
   }
 
-  return code ?? DEFAULT_EXIT_CODE
+  return os.constants.signals[value] ?? DEFAULT_EXIT_CODE
 }
 
 // Function to set the shutdown timeout
