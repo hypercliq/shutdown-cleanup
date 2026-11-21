@@ -4,7 +4,7 @@ import {
   registerHandler,
   setErrorHandlingStrategy,
   type Handler,
-} from '@hypercliq/shutdown-cleanup'
+} from 'phased-shutdown'
 
 const handler: Handler = async (signal) => {
   console.log(signal)

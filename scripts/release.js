@@ -7,7 +7,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { verifyArchive } from './archive.js'
 
-const packageName = '@hypercliq/shutdown-cleanup'
+const packageName = 'phased-shutdown'
 const npmRegistry = 'https://registry.npmjs.org/'
 
 // Build metadata is deliberately excluded from the release policy.
@@ -133,8 +133,8 @@ export async function publicationPlan({
       signal: AbortSignal.timeout(30_000),
     },
   )
-  // This package already exists on npm. A 404 may hide an auth
-  // failure, so it is never permission to publish. Other failures also stop.
+  // Routine releases require a package already registered on npm. A 404 can
+  // hide an auth failure, so it never authorizes publication.
   assert.equal(
     response.status,
     200,

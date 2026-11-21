@@ -9,7 +9,7 @@ import {
   setCustomExitCode,
   setErrorHandlingStrategy,
   setShutdownTimeout,
-} from '@hypercliq/shutdown-cleanup'
+} from 'phased-shutdown'
 
 const [flag, ...rest] = process.argv.slice(2)
 

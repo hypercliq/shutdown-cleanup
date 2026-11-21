@@ -124,19 +124,19 @@ try {
       `import assert from 'node:assert/strict'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
-import * as api from '@hypercliq/shutdown-cleanup'
+import * as api from 'phased-shutdown'
 import {
   addSignal, listHandlers, listSignals, registerHandler, removeHandler,
   removeSignal, setCustomExitCode, setErrorHandlingStrategy, setShutdownTimeout,
-} from '@hypercliq/shutdown-cleanup'
+} from 'phased-shutdown'
 
 assert.deepStrictEqual(Object.keys(api).toSorted((left, right) => left.localeCompare(right)), [
   'addSignal', 'listHandlers', 'listSignals', 'registerHandler', 'removeHandler',
   'removeSignal', 'setCustomExitCode', 'setErrorHandlingStrategy', 'setShutdownTimeout',
 ].toSorted((left, right) => left.localeCompare(right)))
 for (const value of Object.values(api)) assert.equal(typeof value, 'function')
-assert.equal(import.meta.resolve('@hypercliq/shutdown-cleanup'),
-  new URL('./node_modules/@hypercliq/shutdown-cleanup/index.js', import.meta.url).href)
+assert.equal(import.meta.resolve('phased-shutdown'),
+  new URL('./node_modules/phased-shutdown/index.js', import.meta.url).href)
 assert.equal(addSignal('smoke-unused'), true)
 assert.equal(removeSignal('smoke-unused'), true)
 assert.ok(listSignals().includes('SIGTERM'))

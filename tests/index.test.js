@@ -31,7 +31,7 @@ const runShutdownScenario = (source, expectations = {}) =>
           setCustomExitCode,
           setErrorHandlingStrategy,
           setShutdownTimeout,
-        } from '@hypercliq/shutdown-cleanup'
+        } from 'phased-shutdown'
         addSignal('app:shutdown')
         addSignal('app:interrupt')
         ${source}

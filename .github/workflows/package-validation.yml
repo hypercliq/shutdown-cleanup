@@ -44,8 +44,9 @@ jobs:
         run: |
           echo "artifact-name=validated-package-$RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
           mkdir -p "$RUNNER_TEMP/release"
-          npm pack --ignore-scripts --foreground-scripts=false --pack-destination "$RUNNER_TEMP/release"
-          mv "$RUNNER_TEMP"/release/hypercliq-shutdown-cleanup-*.tgz "$RUNNER_TEMP/release/package.tgz"
+          npm pack --json --ignore-scripts --foreground-scripts=false --pack-destination "$RUNNER_TEMP/release" > "$RUNNER_TEMP/release/pack.json"
+          filename=$(node -p 'require(process.argv[1])[0].filename' "$RUNNER_TEMP/release/pack.json")
+          mv "$RUNNER_TEMP/release/$filename" "$RUNNER_TEMP/release/package.tgz"
           node scripts/archive.js seal "$RUNNER_TEMP/release/package.tgz"
       - name: Check source and installed package
         run: npm run check -- "$RUNNER_TEMP/release/package.tgz"

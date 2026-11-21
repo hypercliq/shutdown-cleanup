@@ -7,7 +7,7 @@ import {
   removeHandler,
   setCustomExitCode,
   setShutdownTimeout,
-} from '@hypercliq/shutdown-cleanup'
+} from 'phased-shutdown'
 
 const [signal, mode, journal] = process.argv.slice(2)
 const record = (value) => appendFileSync(journal, `${value}\n`)
