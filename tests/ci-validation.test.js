@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import { parse } from 'yaml'
 import { planValidation } from '../scripts/ci-validation.js'
 
-const repository = 'hypercliq/shutdown-cleanup'
+const repository = 'msanguineti/phased-shutdown'
 const before = '1'.repeat(40)
 const head = '2'.repeat(40)
 const after = '3'.repeat(40)

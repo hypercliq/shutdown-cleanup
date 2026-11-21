@@ -1,6 +1,6 @@
 # Consumer guide
 
-For installation and a runnable HTTP example, see the [homepage](https://hypercliq.github.io/shutdown-cleanup/). Examples below illustrate APIs; functions such as `cleanup` represent application code.
+For installation and a runnable HTTP example, see the [homepage](https://msanguineti.github.io/phased-shutdown/). Examples below illustrate APIs; functions such as `cleanup` represent application code.
 
 ## Shutdown behavior
 
@@ -9,7 +9,7 @@ Importing the module immediately attaches listeners for `SIGTERM`, `SIGHUP`, `SI
 Phases run in ascending numeric order; handlers within each phase run in registration order. Every returned Promise is awaited before the next handler starts. The default phase is `1`.
 
 ```js
-import { registerHandler } from '@hypercliq/shutdown-cleanup'
+import { registerHandler } from 'phased-shutdown'
 
 registerHandler(closeHttpServer, { identifier: 'http', phase: 1 })
 registerHandler(disconnectDatabase, { identifier: 'database', phase: 2 })
@@ -45,7 +45,7 @@ For HTTP servers, wrap [`server.close(callback)`](https://nodejs.org/api/http.ht
 ## Signal-specific handlers and custom events
 
 ```js
-import { addSignal, registerHandler } from '@hypercliq/shutdown-cleanup'
+import { addSignal, registerHandler } from 'phased-shutdown'
 
 addSignal('SIGUSR2') // POSIX opt-in trigger for phased shutdown
 
@@ -73,7 +73,7 @@ import {
   setErrorHandlingStrategy,
   setShutdownTimeout,
   setCustomExitCode,
-} from '@hypercliq/shutdown-cleanup'
+} from 'phased-shutdown'
 
 setErrorHandlingStrategy('stop')
 setShutdownTimeout(20_000)
@@ -136,16 +136,22 @@ Explicit identifiers make logs, `listHandlers()`, and `removeHandler(identifier)
 
 ## Compatibility and migration
 
-Version 8 raised the consumer minimum from Node.js 18 to **22.0.0**. Upgrade deployment and local runtimes before upgrading; transpiling imports alone does not supply iterator helpers or `Array.prototype.toSorted`. Phase strings/fractions are no longer coerced; timeouts must be positive finite numbers and exit codes numeric safe integers. Failed terminating signal-specific handlers now proceed to phases under `continue`. See the [v7.0.1–v8.0.0 history](https://github.com/hypercliq/shutdown-cleanup/compare/v7.0.1...v8.0.0).
+Version 8 raised the consumer minimum from Node.js 18 to **22.0.0**. Upgrade deployment and local runtimes before upgrading; transpiling imports alone does not supply iterator helpers or `Array.prototype.toSorted`. Phase strings/fractions are no longer coerced; timeouts must be positive finite numbers and exit codes numeric safe integers. Failed terminating signal-specific handlers now proceed to phases under `continue`. See the [v7.0.1–v8.0.0 history](https://github.com/msanguineti/phased-shutdown/compare/v7.0.1...v8.0.0).
 
-Changes after the [v8.0.3 release](https://github.com/hypercliq/shutdown-cleanup/releases/tag/v8.0.3) also affect callers:
+Changes after the [v8.0.3 release](https://github.com/msanguineti/phased-shutdown/releases/tag/v8.0.3) also affect callers:
 
 - Registration rejects non-object options (including functions/arrays), non-string identifiers/signals, `phase: null`, non-boolean termination flags, and flags without a signal. Use the types in the API reference; omitted values or `undefined` select defaults. Invalid registrations no longer leave partial registry/listener changes.
 - `signal: ''` now selects the empty-name event rather than phased cleanup. Omit `signal` to select phases. Empty identifiers, inherited options, and ignored extra keys remain accepted.
 - Late registrations no longer join active cleanup, including those created by a terminating signal-specific handler. Pending removals remain supported; empty future phases are safely skipped.
 - Terminating signal-specific handlers now share the guard and deadline with phases. Budget for their runtime; use `shouldTerminate: false` for repeatable actions. Phase/registration order and exit-code conventions are unchanged.
 
-For pre-v7 code, replace positional identifier/phase arguments and `registerSignalHandler` with `registerHandler(handler, options)`. See [release history](https://github.com/hypercliq/shutdown-cleanup/releases) for older changes.
+For pre-v7 code, replace positional identifier/phase arguments and `registerSignalHandler` with `registerHandler(handler, options)`. See [release history](https://github.com/msanguineti/phased-shutdown/releases) for older changes.
+
+### Migrating from Hypercliq shutdown-cleanup
+
+For applications on `@hypercliq/shutdown-cleanup@9.0.0`, install `phased-shutdown`, replace imports of `@hypercliq/shutdown-cleanup` with `phased-shutdown`, and remove the old direct dependency. Commit the updated manifest and lockfile together. Install and use only one copy in each process to avoid registering competing shutdown listeners.
+
+The new package keeps the version 9 API and Node.js requirement. If you use an earlier major version, review the compatibility notes above before switching. Existing npm releases remain available under the old name.
 
 ### GitHub Packages retirement
 

@@ -1,7 +1,7 @@
 {
-  "name": "@hypercliq/shutdown-cleanup",
-  "version": "9.0.0",
-  "description": "Phased graceful shutdown for Node.js — signal handlers, async cleanup, configurable error strategy",
+  "name": "phased-shutdown",
+  "version": "9.0.1-next.0",
+  "description": "Graceful shutdown for Node.js with ordered async cleanup phases.",
   "type": "module",
   "exports": {
     "types": "./index.d.ts",
@@ -27,34 +27,30 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hypercliq/shutdown-cleanup.git"
+    "url": "git+https://github.com/msanguineti/phased-shutdown.git"
   },
   "keywords": [
     "graceful-shutdown",
-    "graceful",
+    "phased-shutdown",
+    "nodejs",
     "shutdown",
     "cleanup",
-    "signal",
+    "async-cleanup",
+    "signal-handlers",
     "sigterm",
     "sigint",
     "sighup",
-    "process",
-    "exit",
-    "handler",
-    "hooks",
-    "lifecycle",
-    "phased-shutdown",
-    "async",
+    "beforeexit",
+    "process-lifecycle",
     "typescript",
-    "esm",
-    "nodejs"
+    "esm"
   ],
-  "author": "Hypercliq",
+  "author": "Mirco Sanguineti",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/hypercliq/shutdown-cleanup/issues"
+    "url": "https://github.com/msanguineti/phased-shutdown/issues"
   },
-  "homepage": "https://hypercliq.github.io/shutdown-cleanup",
+  "homepage": "https://msanguineti.github.io/phased-shutdown",
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",

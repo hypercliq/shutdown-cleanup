@@ -15,7 +15,7 @@ import {
   validateRelease,
 } from '../scripts/release.js'
 
-const name = '@hypercliq/shutdown-cleanup'
+const name = 'phased-shutdown'
 // JSON registries can return null even though application code uses undefined.
 const registryNull = JSON.parse('null')
 const bytes = Buffer.from('one validated release archive')
@@ -281,7 +281,7 @@ test('Pages checks every inventory page and fails closed on API errors', async (
   const release = publishedRelease(1, '2026-10-01T00:00:00Z')
   const newer = publishedRelease(2, '2026-10-02T00:00:00Z')
   const options = {
-    repository: 'hypercliq/shutdown-cleanup',
+    repository: 'msanguineti/phased-shutdown',
     token: 'test-token',
   }
   const urls = []

@@ -49,7 +49,11 @@ New releases publish to npm only. Obtain explicit user authorization before publ
 
 Require successful release metadata, development, installed-package, and platform checks against the same archive and SHA-512 checksum before npm publication. Failed, skipped, or cancelled required validation blocks publication. Stable releases use `latest`; prereleases use `next`. Build metadata is unsupported; promotion needs a new stable version.
 
-Configure [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) for repository owner `hypercliq`, repository `shutdown-cleanup`, workflow `npmpublish.yml`, and no environment. Allow direct `npm publish`. Use a GitHub-hosted runner, Node.js 24, npm >=11.5.1, and OIDC without an npm token.
+Configure [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) for repository owner `msanguineti`, repository `phased-shutdown`, workflow `npmpublish.yml`, and no environment. Allow direct `npm publish`. Use a GitHub-hosted runner, Node.js 24, npm >=11.5.1, and OIDC without an npm token.
+
+### First publication under the new name
+
+The new npm package needs an initial version before npm can configure a trusted publisher. With explicit approval, a maintainer can publish the validated `9.0.1-next.0` archive from an authenticated npm session using `npm publish /path/to/package.tgz --registry=https://registry.npmjs.org/ --access=public --tag=next --ignore-scripts`. Use the archive and checksum from successful toolchain and platform validation at the same revision. Then configure trusted publishing and publish stable `9.0.1` through the normal release workflow. Rendered Pages docs deploy with the stable release. Existing versions under `@hypercliq/shutdown-cleanup` remain installable.
 
 ### Recovery
 
