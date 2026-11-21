@@ -12,7 +12,7 @@ npm test          # Quick declaration and runtime/native checks
 npm run check    # Complete pre-PR gate, including installed-package validation
 ```
 
-`npm run check -- /path/to/package.tgz` validates an existing archive. `npm run test:package -- --runtime-only /path/to/package.tgz` runs full installed runtime/native tests without development dependencies. After development setup, omit the archive to pack once.
+Both package checks can use an existing archive. `npm run check -- /path/to/package.tgz` runs the full development checks against it. `npm run test:package -- --runtime-only /path/to/package.tgz` runs the installed runtime and native tests without development dependencies. From a development checkout, either command can build the archive when you omit the path.
 
 ## Changes and fixtures
 
@@ -24,20 +24,16 @@ Test native OS delivery with `tests/signal-fixture.js`, never substitute `proces
 
 ## Platform validation
 
-PRs, merge-queue entries and manual CI runs perform full validation. After a push
-to `main`, a read-only planner reuses a successful PR run only when its recorded
-synthetic merge commit has the previous `main` and the PR head as parents, its
-tree matches the pushed content, and the toolchain, all sixteen platform jobs
-and support gate actually succeeded. Direct pushes, changed bases, unavailable
-evidence and planner failures run full validation. Release validation runs
-independently and is never skipped by this reuse policy.
+Pull requests, merge-queue entries, and manual runs go straight to full validation. To start a manual run, choose **Node.js CI → Run workflow**.
+
+Only pushes to `main` run the read-only planner. A push can reuse PR validation when the recorded PR merge commit has the previous `main` and the PR head as its parents, its tree matches the pushed content, and the toolchain, all sixteen platform jobs, and the support gate succeeded. Direct pushes, changed bases, missing evidence, and planner failures trigger full validation.
 
 `main` requires PRs and up-to-date CodeQL, toolchain and platform-gate checks.
 Repository administrators (including organization owners) may bypass these
 requirements for exceptional direct pushes, which still trigger CI. Other roles
 cannot bypass them. Force pushes and branch deletion are prohibited for everyone.
 
-Require packed-package validation on Linux x64, Windows x64, macOS ARM64, and macOS Intel x64 with Node 22.0.0, current 22.x, 24.x, and 26.x. Review native signal, console, and forced-termination results for every target. Use **Node.js CI → Run workflow** for manual validation. See the [consumer limitations](DEVGUIDE.md#platforms-and-limitations) when testing application environments.
+Require packed-package validation on Linux x64, Windows x64, macOS ARM64, and macOS Intel x64 with Node 22.0.0, current 22.x, 24.x, and 26.x. Review native signal, console, and forced-termination results for every target. See the [consumer limitations](DEVGUIDE.md#platforms-and-limitations) when testing application environments.
 
 ## Releases
 
@@ -47,17 +43,15 @@ New releases publish to npm only. Obtain explicit user authorization before publ
 2. Require the intended revision's complete [platform validation](#platform-validation).
 3. When authorized, tag that commit `v<version>` and publish its GitHub release; mark suffixed versions as prereleases.
 
-Require successful release metadata, development, installed-package, and platform checks against the same archive and SHA-512 checksum before npm publication. Failed, skipped, or cancelled required validation blocks publication. Stable releases use `latest`; prereleases use `next`. Build metadata is unsupported; promotion needs a new stable version.
+The release workflow runs its own validation, independently of the push planner. Publication requires successful release metadata, development, installed-package, and platform checks. The workflow verifies the same archive against its SHA-512 checksum before publishing. Failed, skipped, or cancelled required validation blocks publication. Stable releases use `latest`, and prereleases use `next`. Promotion requires a new stable version. The release workflow rejects versions with build metadata.
 
 Configure [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) for repository owner `msanguineti`, repository `phased-shutdown`, workflow `npmpublish.yml`, and no environment. Allow direct `npm publish`. Use a GitHub-hosted runner, Node.js 24, npm >=11.5.1, and OIDC without an npm token.
 
-### First publication under the new name
-
-The new npm package needs an initial version before npm can configure a trusted publisher. With explicit approval, a maintainer can publish the validated `9.0.1-next.0` archive from an authenticated npm session using `npm publish /path/to/package.tgz --registry=https://registry.npmjs.org/ --access=public --tag=next --ignore-scripts`. Use the archive and checksum from successful toolchain and platform validation at the same revision. Then configure trusted publishing and publish stable `9.0.1` through the normal release workflow. Rendered Pages docs deploy with the stable release. Existing versions under `@hypercliq/shutdown-cleanup` remain installable.
-
 ### Recovery
 
-Use **Re-run failed jobs** to reuse the validated archive and checksum (retained 30 days); if expired, rerun all jobs on the original tagged commit. An already-published version must have matching integrity; different contents or unavailable registry metadata stop publication. Never overwrite a version or move its tag: changed contents require a new version.
+After a successful build, use **Re-run failed jobs** to reuse its validated archive and checksum, retained for 30 days. If the archive is unavailable and GitHub still offers a rerun, use **Re-run all jobs** on the original release run to rebuild from the original tagged commit. If the run is outside GitHub’s 30-day rerun window, stop and confirm a recovery path before attempting publication. [GitHub’s rerun limits](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs)
+
+An already-published version must have matching integrity. Different contents or unavailable registry metadata stop publication. Changed contents require a new version and tag.
 
 Inspect registry state before separately repairing missing dist-tags. Recovery preserves existing tags and refuses to move `latest`/`next` backwards. Do not rerun retired GitHub Packages publication jobs or redeploy older Pages docs.
 
@@ -65,4 +59,17 @@ Inspect registry state before separately repairing missing dist-tags. Recovery p
 
 Keep installation and the runnable example in [README.md](README.md), and consumer behavior, API, limitations, and migrations in [DEVGUIDE.md](DEVGUIDE.md).
 
-For documentation changes, build the staged consumer source locally with Jekyll and inspect generated files and internal links without deploying. Keep the staging allowlist in `npmpublish.yml` limited to README (as `index.md`), DEVGUIDE, license, logo, and Jekyll configuration. Pages requires successful npm publication and confirmation that the release is the latest published, including prereleases; if that evidence is unavailable, do not deploy.
+With the `github-pages` gem installed, run these commands from the repository root to build the consumer docs locally. They stage the same files as `npmpublish.yml`. Inspect `_site/index.html` and `_site/DEVGUIDE.html` and check their internal links.
+
+```sh
+mkdir -p .pages-source
+cp README.md .pages-source/index.md
+cp DEVGUIDE.md LICENSE logo-io.png _config.yml .pages-source/
+(
+  cd .pages-source
+  PAGES_REPO_NWO=msanguineti/phased-shutdown \
+    ruby -r github-pages -S jekyll build --destination ../_site
+)
+```
+
+The workflow deploys Pages after npm publication succeeds or the published package passes its integrity check. The triggering release must also be the newest by GitHub publication time, including prereleases. If the workflow cannot verify this, it stops deployment.

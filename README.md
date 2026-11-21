@@ -7,7 +7,7 @@ Graceful shutdown for Node.js with ordered async cleanup phases. Stop accepting 
 
 ## Install
 
-Requires **Node.js >=22.0.0**; ESM-only.
+The package ships as an ES module and requires **Node.js 22.0.0 or later**.
 
 ```sh
 npm install phased-shutdown
@@ -15,7 +15,7 @@ npm install phased-shutdown
 
 ## Minimal example
 
-Save as `server.mjs`, run `node server.mjs`, then press Ctrl+C:
+Save this example as `server.mjs`.
 
 ```js
 import { createServer } from 'node:http'
@@ -37,9 +37,11 @@ registerHandler(
 server.listen(3000, '127.0.0.1')
 ```
 
-The Promise waits for HTTP closure.
+Run `node server.mjs` and open `http://127.0.0.1:3000/` to see `Hello`. Press Ctrl+C in the server’s terminal. The cleanup Promise waits for the server to close, and the process exits with code `2` (`SIGINT`).
 
-See the **[consumer guide](https://msanguineti.github.io/phased-shutdown/DEVGUIDE.html)** ([source](https://github.com/msanguineti/phased-shutdown/blob/main/DEVGUIDE.md)) for the API, platform limitations, timeout and exit-code policy, and migration notes, including [how to migrate from `@hypercliq/shutdown-cleanup`](https://github.com/msanguineti/phased-shutdown/blob/main/DEVGUIDE.md#migrating-from-hypercliq-shutdown-cleanup).
+The [consumer guide](https://msanguineti.github.io/phased-shutdown/DEVGUIDE.html) covers the API, platform limitations, timeout and exit codes, and [migration from `@hypercliq/shutdown-cleanup`](https://msanguineti.github.io/phased-shutdown/DEVGUIDE.html#migrating-from-hypercliq-shutdown-cleanup). See the [guide source](https://github.com/msanguineti/phased-shutdown/blob/main/DEVGUIDE.md) for the version in this repository.
+
+For development setup, validation, and releases, see [Contributing and maintaining](https://github.com/msanguineti/phased-shutdown/blob/main/CONTRIBUTING.md).
 
 ## License
 

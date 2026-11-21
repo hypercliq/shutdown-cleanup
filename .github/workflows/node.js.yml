@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   validation-plan:
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -49,5 +50,8 @@ jobs:
 
   toolchain:
     needs: validation-plan
-    if: ${{ always() && !cancelled() && needs.validation-plan.outputs.run != 'false' }}
+    if: >-
+      ${{ always() && !cancelled() &&
+      (needs.validation-plan.result != 'success' ||
+      needs.validation-plan.outputs.run != 'false') }}
     uses: ./.github/workflows/package-validation.yml

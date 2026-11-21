@@ -21,7 +21,7 @@ const packageValidation = workflow('package-validation.yml')
 const action = (job, name) =>
   job.steps.find((step) => step.uses?.startsWith(`${name}@`))
 
-test('only proven reuse skips CI; a failed planner still runs full validation', () => {
+test('only pushes consult the planner and only successful reuse skips validation', () => {
   assert.equal(
     ci['run-name'],
     'Node.js CI / ${{ github.event_name }} / ${{ github.sha }} / PR ${{ github.event.pull_request.number || 0 }}',
@@ -32,14 +32,16 @@ test('only proven reuse skips CI; a failed planner still runs full validation', 
   assert.ok(Object.hasOwn(ci.on, 'workflow_dispatch'))
   assert.equal(ci.jobs.toolchain.needs, 'validation-plan')
   assert.equal(
-    ci.jobs.toolchain.if,
-    "${{ always() && !cancelled() && needs.validation-plan.outputs.run != 'false' }}",
+    ci.jobs.toolchain.if.replaceAll(/\s+/g, ' '),
+    "${{ always() && !cancelled() && (needs.validation-plan.result != 'success' || needs.validation-plan.outputs.run != 'false') }}",
   )
+  assert.equal(ci.jobs.platforms.needs, 'toolchain')
   assert.equal(
     ci.jobs.platforms.if,
     "${{ always() && !cancelled() && needs.toolchain.result == 'success' }}",
   )
   const planner = ci.jobs['validation-plan']
+  assert.equal(planner.if, "${{ github.event_name == 'push' }}")
   assert.deepEqual(planner.permissions, {
     contents: 'read',
     actions: 'read',

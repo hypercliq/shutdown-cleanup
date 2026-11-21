@@ -1,6 +1,6 @@
 {
   "name": "phased-shutdown",
-  "version": "9.0.1",
+  "version": "9.0.2",
   "description": "Graceful shutdown for Node.js with ordered async cleanup phases.",
   "type": "module",
   "exports": {
